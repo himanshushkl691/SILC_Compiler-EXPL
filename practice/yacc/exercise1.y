@@ -13,6 +13,7 @@ a:	IF'{'a'}'		{level++;}
 %%
 #include "lex.yy.c"
 int yyerror(const char *s){
+	printf("Invalid Syntax\n");
 	return 0;
 }
 
