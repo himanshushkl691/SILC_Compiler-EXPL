@@ -1,1 +1,1 @@
-# SILC_Compiler-EXPL Language
+# SILC_Compiler-SIL Language
