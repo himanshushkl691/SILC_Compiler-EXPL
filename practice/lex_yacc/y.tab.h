@@ -45,25 +45,32 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    IDENTIFIER = 258,
-    NEWLINE = 259
+    NUM = 258,
+    PLUS = 259,
+    MINUS = 260,
+    MUL = 261,
+    DIV = 262,
+    END = 263
   };
 #endif
 /* Tokens.  */
-#define IDENTIFIER 258
-#define NEWLINE 259
+#define NUM 258
+#define PLUS 259
+#define MINUS 260
+#define MUL 261
+#define DIV 262
+#define END 263
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 
 union YYSTYPE
 {
-#line 9 "exercise2_yacc.y" /* yacc.c:1909  */
+#line 9 "exptree.y" /* yacc.c:1909  */
 
-    char character;
-    char* string;
+    struct tnode *node;
 
-#line 67 "y.tab.h" /* yacc.c:1909  */
+#line 74 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
