@@ -7,13 +7,14 @@
 %%
 /**Rule Section**/
 a:	IF'{'a'}'		{level++;}
- |	IF'{''}' a
+ |	IF'{'a'}'a		{level++;}
+ |	IF'{''}'a
  |	IF'{''}'		{level++;}
 ;
 %%
 #include "lex.yy.c"
 int yyerror(const char *s){
-	printf("Invalid Syntax\n");
+	printf("Invalid syntax.\n");
 	return 0;
 }
 
