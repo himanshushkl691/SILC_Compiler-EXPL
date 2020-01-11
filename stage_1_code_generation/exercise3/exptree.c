@@ -1,16 +1,16 @@
-//---------------------------------------------Abstract Syntax Tree Functions------------------------------
-struct AST_Node *makeLeafNode(int num){
-	struct AST_Node *newnode;
-	newnode = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+//---------------------------------------------Expression Tree Functions------------------------------
+struct ET_Node *makeLeafNode(int num){
+	struct ET_Node *newnode;
+	newnode = (struct ET_Node *)malloc(sizeof(struct ET_Node));
 	newnode->val = num;
 	newnode->oper = NULL;
 	newnode->left = newnode->right = NULL;
 	return newnode;
 }
 
-struct AST_Node *makeOperatorNode(char op,struct AST_Node *l,struct AST_Node *r){
-	struct AST_Node *newnode;
-	newnode = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+struct ET_Node *makeOperatorNode(char op,struct ET_Node *l,struct ET_Node *r){
+	struct ET_Node *newnode;
+	newnode = (struct ET_Node *)malloc(sizeof(struct ET_Node));
 	newnode->oper = (char *)malloc(sizeof(char));
 	*(newnode->oper) = op;
 	newnode->left = l;
@@ -18,7 +18,7 @@ struct AST_Node *makeOperatorNode(char op,struct AST_Node *l,struct AST_Node *r)
 	return newnode;
 }
 
-void prefix(struct AST_Node *root){
+void prefix(struct ET_Node *root){
 	if(root->oper == NULL){
 		printf("%d ",root->val);
 		return;
@@ -29,7 +29,7 @@ void prefix(struct AST_Node *root){
 	return;
 }
 
-void postfix(struct AST_Node *root){
+void postfix(struct ET_Node *root){
 	if(root->oper == NULL){
 		printf("%d ",root->val);
 		return;
@@ -40,7 +40,7 @@ void postfix(struct AST_Node *root){
 	return;
 }
 
-int evaluate(struct AST_Node *root){
+int evaluate(struct ET_Node *root){
 	if(root->oper == NULL)
 		return root->val;
 	else{
@@ -116,7 +116,7 @@ reg_idx freeReg(){
 //-----------------------------------------------------------------------------------
 
 //-------------------------------Code Generation-------------------------------------
-reg_idx code_generator_util(FILE *ft,struct AST_Node *root){
+reg_idx code_generator_util(FILE *ft,struct ET_Node *root){
 	if(root->oper == NULL){
 		reg_idx id = getReg();
 		if(id == -1) exit(1);
@@ -155,7 +155,7 @@ reg_idx code_generator_util(FILE *ft,struct AST_Node *root){
 		}
 	}
 }
-void code_generator(FILE *ft,struct AST_Node *root){
+void code_generator(FILE *ft,struct ET_Node *root){
 	fprintf(ft,"%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n",0,2056,0,0,0,0,0,0);
 	fprintf(ft,"BRKP\n");
 	reg_idx res = code_generator_util(ft,root);

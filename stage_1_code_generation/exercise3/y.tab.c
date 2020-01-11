@@ -129,7 +129,7 @@ union YYSTYPE
 {
 #line 10 "exptree.y" /* yacc.c:355  */
 
-	struct AST_Node *node;
+	struct ET_Node *node;
 
 #line 135 "y.tab.c" /* yacc.c:355  */
 };

@@ -1,15 +1,15 @@
-//------------------------------------------Abstract Syntax Tree Declaration Section--------------------------------------
-struct AST_Node{
+//------------------------------------------Expression Tree Declaration Section--------------------------------------
+struct ET_Node{
 	int val;
 	char *oper;
-	struct AST_Node *left,*right;
+	struct ET_Node *left,*right;
 };
 
-struct AST_Node *makeLeafNode(int);
-struct AST_Node *makeOperatorNode(char,struct AST_Node *,struct AST_Node *);
-void postfix(struct AST_Node *);
-void prefix(struct AST_Node *);
-int evaluate(struct AST_Node *);
+struct ET_Node *makeLeafNode(int);
+struct ET_Node *makeOperatorNode(char,struct ET_Node *,struct ET_Node *);
+void postfix(struct ET_Node *);
+void prefix(struct ET_Node *);
+int evaluate(struct ET_Node *);
 //------------------------------------------------------------------------------------------------------------------------
 
 //----------------Auxiliary Data Structure-----------------
@@ -32,6 +32,6 @@ void init_reg_pool();
 reg_idx getReg();
 //releases greatest i where Ri is allocated register
 reg_idx freeReg();
-reg_idx code_generator_util(FILE *,struct AST_Node *);
-void code_generator(FILE *,struct AST_Node *);
+reg_idx code_generator_util(FILE *,struct ET_Node *);
+void code_generator(FILE *,struct ET_Node *);
 //------------------------------------------------------------------------------------------------------------------------

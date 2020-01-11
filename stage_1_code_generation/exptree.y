@@ -8,7 +8,7 @@
 %}
 
 %union{
-	struct AST_Node *node;
+	struct ET_Node *node;
 };
 
 %type <node> expr NUM END start
