@@ -1253,7 +1253,7 @@ yyreduce:
     {
     (yyval.node) = (yyvsp[0].node);
     printf("Parsing completed\n");
-    evaluator((yyvsp[-1].node));
+    code_generator(ft,(yyvsp[-1].node));
     exit(1);
 }
 #line 1260 "y.tab.c" /* yacc.c:1646  */

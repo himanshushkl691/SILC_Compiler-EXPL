@@ -21,7 +21,7 @@
 program:    _BEGIN _FINISHED Slist _END {
     $$ = $4;
     printf("Parsing completed\n");
-    evaluator($3);
+    code_generator(ft,$3);
     exit(1);
 }
 |   _BEGIN _FINISHED _END   {

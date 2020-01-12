@@ -51,6 +51,15 @@ reg_idx freeReg();
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------Code Generation Function-------------------------------------------------------
+reg_idx expression_code_generator(FILE *ft, struct AST_Node *);
+int assignment_code_generator(FILE *ft, struct AST_Node *);
+int read_code_generator(FILE *ft, struct AST_Node *);
+int write_code_generator(FILE *ft, struct AST_Node *);
+void code_generator_util(FILE *ft, struct AST_Node *);
+void code_generator(FILE *ft, struct AST_Node *);
+//------------------------------------------------------------------------------------------------------------------------
+
+//-----------------------------------------------Evaluator Function-------------------------------------------------------
 int expression_evaluator(struct AST_Node *);
 void assignment_evaluator(struct AST_Node *);
 void read_evaluator(struct AST_Node *);
