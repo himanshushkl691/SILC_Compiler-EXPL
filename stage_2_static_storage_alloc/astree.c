@@ -1,104 +1,80 @@
-//---------------------------------------------Expression Tree Functions------------------------------
-struct ET_Node *makeLeafNode(int num)
+void allocate()
 {
-	struct ET_Node *newnode;
-	newnode = (struct ET_Node *)malloc(sizeof(struct ET_Node));
-	newnode->val = num;
-	newnode->oper = NULL;
-	newnode->left = newnode->right = NULL;
-	return newnode;
-}
-
-struct ET_Node *makeOperatorNode(char op, struct ET_Node *l, struct ET_Node *r)
-{
-	struct ET_Node *newnode;
-	newnode = (struct ET_Node *)malloc(sizeof(struct ET_Node));
-	newnode->oper = (char *)malloc(sizeof(char));
-	*(newnode->oper) = op;
-	newnode->left = l;
-	newnode->right = r;
-	return newnode;
-}
-
-void prefix(struct ET_Node *root)
-{
-	if (root->oper == NULL)
+	int curr = 4096;
+	for (int i = 0; i < 26; i++)
 	{
-		printf("%d ", root->val);
-		return;
-	}
-	printf("%c ", *(root->oper));
-	prefix(root->left);
-	prefix(root->right);
-	return;
-}
-
-void postfix(struct ET_Node *root)
-{
-	if (root->oper == NULL)
-	{
-		printf("%d ", root->val);
-		return;
-	}
-	postfix(root->left);
-	postfix(root->right);
-	printf("%c ", *(root->oper));
-	return;
-}
-
-int evaluate(struct ET_Node *root)
-{
-	if (root->oper == NULL)
-		return root->val;
-	else
-	{
-		int a = evaluate(root->left);
-		int b = evaluate(root->right);
-		switch (*(root->oper))
-		{
-		case '+':
-			return (a + b);
-			break;
-		case '-':
-			return (a - b);
-			break;
-		case '*':
-			return (a * b);
-			break;
-		case '/':
-			return (a / b);
-			break;
-		}
+		address[i] = curr;
+		curr++;
 	}
 }
-//-----------------------------------------------------------------------------------
-
-//-----------------------------Auxiliary Data Structure function---------------------
-vector *init_vector()
+//--------------------------------------Abstract Syntax Tree Declrations---------------------------------
+struct AST_Node *makeVariableLeafNode(int nodetype, int type, char varname)
 {
-	vector *newn = (vector *)malloc(sizeof(vector));
-	newn->capacity = 2;
-	newn->arr = (int *)malloc(sizeof(int) * 2);
-	newn->size = 0;
+	struct AST_Node *newn;
+	newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->type = type;
+	newn->nodetype = nodetype;
+	newn->varname = (char *)malloc(sizeof(char));
+	*(newn->varname) = varname;
+	newn->left = newn->right = NULL;
+	newn->oper = NULL;
 	return newn;
 }
 
-vector *push_back(vector *v, int val)
+struct AST_Node *makeConstantLeafNode(int nodetype, int type, int val)
 {
-	if (v->size == v->capacity)
-	{
-		v->capacity *= 2;
-		v->arr = (int *)realloc(v->arr, v->capacity * sizeof(int));
+	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->nodetype = nodetype;
+	newn->type = type;
+	newn->val = val;
+	newn->left = newn->right = NULL;
+	newn->oper = newn->varname = NULL;
+	return newn;
+}
+
+struct AST_Node *makeStatementNode(int nodetype, int type, struct AST_Node *l, struct AST_Node *r)
+{
+	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->nodetype = nodetype;
+	newn->type = type;
+	newn->varname = newn->oper = NULL;
+	newn->left = l;
+	newn->right = r;
+	return newn;
+}
+
+struct AST_Node *makeExpressionNode(int nodetype, int type, char op, struct AST_Node *l, struct AST_Node *r)
+{
+	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->nodetype = nodetype;
+	newn->type = type;
+	newn->oper = (char *)malloc(sizeof(char));
+	*(newn->oper) = op;
+	newn->left = l;
+	newn->right = r;
+	newn->varname = NULL;
+	return newn;
+}
+
+struct AST_Node *makeRWNode(int nodetype, int type, struct AST_Node *l)
+{
+	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->nodetype = nodetype;
+	newn->type = type;
+	newn->right = NULL;
+	newn->left = l;
+	newn->varname = newn->oper = NULL;
+	return newn;
+}
+
+void print_tree(struct AST_Node *root){
+	if(root){
+		printf("%d %d\n",root->nodetype,root->type);
+		print_tree(root->left);
+		print_tree(root->right);
 	}
-	v->arr[v->size] = val;
-	v->size++;
-	return v;
 }
-int size(vector *v)
-{
-	return (v->size);
-}
-//-----------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------
 
 //-----------------------------Register Allocation Functions-------------------------
 void init_reg_pool()
