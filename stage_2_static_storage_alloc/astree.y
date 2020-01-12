@@ -1,9 +1,11 @@
 %{
     #include <stdio.h>
     #include <stdlib.h>
+    #include <string.h>
     #include "astree.h"
     #include "astree.c"
     int yylex(void);
+    FILE *ft;
 %}
 
 %union{
@@ -19,6 +21,7 @@
 program:    _BEGIN _FINISHED Slist _END {
     $$ = $4;
     printf("Parsing completed\n");
+    evaluator($3);
     exit(1);
 }
 |   _BEGIN _FINISHED _END   {
@@ -28,7 +31,7 @@ program:    _BEGIN _FINISHED Slist _END {
     }
 ;
 Slist:  Slist stmt{
-    $$ = makeStatementNode(STATEMENT,STATEMENT,$1,$2);
+    $$ = makeStatementNode(STATEMENT,STATEMENT,$1,$2,"STATEMENT");
 }
 |   stmt  {
         $$ = $1;
@@ -45,27 +48,27 @@ stmt:   Inputstmt {
 }
 ;
 Inputstmt:  _READ '(' _ID ')' ';'  _FINISHED{
-    $$ = makeStatementNode(STATEMENT,READ,$3,(struct AST_Node *)NULL);
+    $$ = makeStatementNode(STATEMENT,READ,$3,(struct AST_Node *)NULL,"Read");
 }
 ;
 Outputstmt: _WRITE '(' expr ')' ';' _FINISHED {
-    $$ = makeStatementNode(STATEMENT,WRITE,$3,(struct AST_Node *)NULL);
+    $$ = makeStatementNode(STATEMENT,WRITE,$3,(struct AST_Node *)NULL,"Write");
 };
 Assgstmt:   id '=' expr ';' _FINISHED {
-    $$ = makeExpressionNode(EXPRESSION,ASSIGNMENT,'=',$1,$3);
+    $$ = makeExpressionNode(EXPRESSION,ASSIGNMENT,'=',$1,$3,"=");
 }
 ;
 expr:   expr _PLUS  expr    {
-    $$ = makeExpressionNode(EXPRESSION,PLUS,'+',$1,$3);
+    $$ = makeExpressionNode(EXPRESSION,PLUS,'+',$1,$3,"+");
 }
 |   expr _MINUS expr     {
-    $$ = makeExpressionNode(EXPRESSION,MINUS,'-',$1,$3);
+    $$ = makeExpressionNode(EXPRESSION,MINUS,'-',$1,$3,"-");
 }
 |   expr _MUL expr   {
-    $$ = makeExpressionNode(EXPRESSION,MUL,'*',$1,$3);
+    $$ = makeExpressionNode(EXPRESSION,MUL,'*',$1,$3,"*");
 }
 |   expr _DIV expr   {
-    $$ = makeExpressionNode(EXPRESSION,DIV,'/',$1,$3);
+    $$ = makeExpressionNode(EXPRESSION,DIV,'/',$1,$3,"/");
 }
 |   '(' expr ')'    {
     $$ = $2;
@@ -81,7 +84,16 @@ void yyerror(const char *err){
     return;
 }
 
-int main(){
-    yyparse();
+int main(int argc,char *argv[]){
+    if(argc > 1){
+		printf("Generating file as %s\n",argv[1]);
+		ft = fopen(argv[1],"w");
+		yyparse();
+	}
+	else{
+		printf("Generating file as code.xsm\n");
+		ft = fopen("code.xsm","w");
+		yyparse();
+	}
     return 1;
 }

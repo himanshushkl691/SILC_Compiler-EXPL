@@ -14,8 +14,8 @@ begin {return _BEGIN;}
 end {return _END;}
 read {return _READ;}
 write {return _WRITE;}
-{alpha} {yylval.node = makeVariableLeafNode(VARIABLE,INTEGER,*yytext);return _ID;}
-{digit} {number = atoi(yytext);yylval.node = makeConstantLeafNode(CONSTANT,INTEGER,number);return _NUM;}
+{alpha} {yylval.node = makeVariableLeafNode(VARIABLE,INTEGER,*yytext,yytext);return _ID;}
+{digit} {number = atoi(yytext);yylval.node = makeConstantLeafNode(CONSTANT,INTEGER,number,yytext);return _NUM;}
 ";" {return *yytext;}
 "(" {return *yytext;}
 ")" {return *yytext;}

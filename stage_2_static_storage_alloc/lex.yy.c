@@ -766,12 +766,12 @@ YY_RULE_SETUP
 case 5:
 YY_RULE_SETUP
 #line 17 "astree.l"
-{yylval.node = makeVariableLeafNode(VARIABLE,INTEGER,*yytext);return _ID;}
+{yylval.node = makeVariableLeafNode(VARIABLE,INTEGER,*yytext,yytext);return _ID;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
 #line 18 "astree.l"
-{number = atoi(yytext);yylval.node = makeConstantLeafNode(CONSTANT,INTEGER,number);return _NUM;}
+{number = atoi(yytext);yylval.node = makeConstantLeafNode(CONSTANT,INTEGER,number,yytext);return _NUM;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP

@@ -1,3 +1,4 @@
+//--------------------------------------Static Storage Allocation---------------------------------------
 void allocate()
 {
 	int curr = 4096;
@@ -7,11 +8,23 @@ void allocate()
 		curr++;
 	}
 }
+
+void clear_storage()
+{
+	for (int i = 0; i < 26; i++)
+		storage[i] = 0;
+	return;
+}
+//-------------------------------------------------------------------------------------------------------
+
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
-struct AST_Node *makeVariableLeafNode(int nodetype, int type, char varname)
+struct AST_Node *makeVariableLeafNode(int nodetype, int type, char varname, char *s)
 {
 	struct AST_Node *newn;
 	newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->oper = (char *)malloc(sizeof(char));
+	newn->s = (char *)malloc(strlen(s) * sizeof(char));
+	newn->s = strdup(s);
 	newn->type = type;
 	newn->nodetype = nodetype;
 	newn->varname = (char *)malloc(sizeof(char));
@@ -21,9 +34,12 @@ struct AST_Node *makeVariableLeafNode(int nodetype, int type, char varname)
 	return newn;
 }
 
-struct AST_Node *makeConstantLeafNode(int nodetype, int type, int val)
+struct AST_Node *makeConstantLeafNode(int nodetype, int type, int val, char *s)
 {
 	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->oper = (char *)malloc(sizeof(char));
+	newn->s = (char *)malloc(strlen(s) * sizeof(char));
+	newn->s = strdup(s);
 	newn->nodetype = nodetype;
 	newn->type = type;
 	newn->val = val;
@@ -32,9 +48,12 @@ struct AST_Node *makeConstantLeafNode(int nodetype, int type, int val)
 	return newn;
 }
 
-struct AST_Node *makeStatementNode(int nodetype, int type, struct AST_Node *l, struct AST_Node *r)
+struct AST_Node *makeStatementNode(int nodetype, int type, struct AST_Node *l, struct AST_Node *r, char *s)
 {
 	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->oper = (char *)malloc(sizeof(char));
+	newn->s = (char *)malloc(strlen(s) * sizeof(char));
+	newn->s = strdup(s);
 	newn->nodetype = nodetype;
 	newn->type = type;
 	newn->varname = newn->oper = NULL;
@@ -43,12 +62,14 @@ struct AST_Node *makeStatementNode(int nodetype, int type, struct AST_Node *l, s
 	return newn;
 }
 
-struct AST_Node *makeExpressionNode(int nodetype, int type, char op, struct AST_Node *l, struct AST_Node *r)
+struct AST_Node *makeExpressionNode(int nodetype, int type, char op, struct AST_Node *l, struct AST_Node *r, char *s)
 {
 	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
 	newn->nodetype = nodetype;
 	newn->type = type;
 	newn->oper = (char *)malloc(sizeof(char));
+	newn->s = (char *)malloc(strlen(s) * sizeof(char));
+	newn->s = strdup(s);
 	*(newn->oper) = op;
 	newn->left = l;
 	newn->right = r;
@@ -56,9 +77,12 @@ struct AST_Node *makeExpressionNode(int nodetype, int type, char op, struct AST_
 	return newn;
 }
 
-struct AST_Node *makeRWNode(int nodetype, int type, struct AST_Node *l)
+struct AST_Node *makeRWNode(int nodetype, int type, struct AST_Node *l, char *s)
 {
 	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->oper = (char *)malloc(sizeof(char));
+	newn->s = (char *)malloc(strlen(s) * sizeof(char));
+	newn->s = strdup(s);
 	newn->nodetype = nodetype;
 	newn->type = type;
 	newn->right = NULL;
@@ -67,10 +91,12 @@ struct AST_Node *makeRWNode(int nodetype, int type, struct AST_Node *l)
 	return newn;
 }
 
-void print_tree(struct AST_Node *root){
-	if(root){
-		printf("%d %d\n",root->nodetype,root->type);
+void print_tree(struct AST_Node *root)
+{
+	if (root)
+	{
 		print_tree(root->left);
+		printf("%s ", root->s);
 		print_tree(root->right);
 	}
 }
@@ -117,9 +143,9 @@ reg_idx freeReg()
 //-----------------------------------------------------------------------------------
 
 //-------------------------------Code Generation-------------------------------------
-reg_idx code_generator_util(FILE *ft, struct ET_Node *root)
+reg_idx expression_code_generator(FILE *ft, struct AST_Node *root)
 {
-	if (root->oper == NULL)
+	if (root->nodetype == CONSTANT && root->type == INTEGER && root->oper == NULL)
 	{
 		reg_idx id = getReg();
 		if (id == -1)
@@ -127,10 +153,19 @@ reg_idx code_generator_util(FILE *ft, struct ET_Node *root)
 		fprintf(ft, "MOV R%d,%d\n", id, root->val);
 		return id;
 	}
+	if (root->nodetype == VARIABLE && root->type == INTEGER && root->varname != NULL)
+	{
+		int aRes = address[*(root->varname) - 'a'];
+		reg_idx id = getReg();
+		if (id == -1)
+			exit(1);
+		fprintf(ft, "MOV R%d,[%d]\n", id, aRes);
+		return id;
+	}
 	else
 	{
-		reg_idx a = code_generator_util(ft, root->left);
-		reg_idx b = code_generator_util(ft, root->right);
+		reg_idx a = expression_code_generator(ft, root->left);
+		reg_idx b = expression_code_generator(ft, root->right);
 		reg_idx id;
 		switch (*(root->oper))
 		{
@@ -165,32 +200,125 @@ reg_idx code_generator_util(FILE *ft, struct ET_Node *root)
 		}
 	}
 }
-void code_generator(FILE *ft, struct ET_Node *root)
+
+int assignment_code_generator(FILE *ft, struct AST_Node *root)
 {
-	init_reg_pool();
-	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
-	fprintf(ft, "BRKP\n");
-	reg_idx res = code_generator_util(ft, root);
-	if (res == -1)
+	if (root && root->left && root->right)
+	{
+		reg_idx id = expression_code_generator(ft, root->right);
+		int aRes = address[*(root->left->varname) - 'a'];
+		fprintf(ft, "MOV [%d],R%d\n", aRes, id);
+		id = freeReg();
+		if (id == -1)
+			exit(1);
+		return 1;
+	}
+	printf("Improper Assignment Node\n");
+	exit(1);
+	return -1;
+}
+
+int write_code_generator(FILE *ft, struct AST_Node *root)
+{
+	if (root && root->left)
+	{
+		reg_idx id = expression_code_generator(ft, root->left);
+		reg_idx temp = getReg();
+		if (temp == -1)
+			exit(1);
+		fprintf(ft, "MOV R%d,\"Write\"\n", temp);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "MOV R%d,-2\n", temp);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "PUSH R%d\n", id);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "CALL 0\n");
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		id = freeReg();
+		if (id == -1)
+			exit(1);
+		id = freeReg();
+		if (id == -1)
+			exit(1);
+		return 1;
+	}
+	printf("Improper Writing Node\n");
+	return -1;
+}
+
+int read_code_generator(FILE *ft, struct AST_Node *root)
+{
+	int aRes = address[*(root->left->varname) - 'a'];
+	reg_idx id = getReg();
+	if (id == -1)
 		exit(1);
-	fprintf(ft, "MOV [4096],R%d\n", res);
-	fprintf(ft, "MOV SP,4096\n");
 	reg_idx temp = getReg();
 	if (temp == -1)
 		exit(1);
-	fprintf(ft, "MOV R%d,\"Write\"\n", temp);
+	fprintf(ft, "MOV R%d,%d\n", id, aRes);
+	fprintf(ft, "MOV R%d,\"Read\"\n", temp);
 	fprintf(ft, "PUSH R%d\n", temp);
-	fprintf(ft, "MOV R%d,-2\n", temp);
+	fprintf(ft, "MOV R%d,-1\n", temp);
 	fprintf(ft, "PUSH R%d\n", temp);
-	fprintf(ft, "PUSH R%d\n", res);
+	fprintf(ft, "PUSH R%d\n", id);
 	fprintf(ft, "PUSH R%d\n", temp);
 	fprintf(ft, "PUSH R%d\n", temp);
 	fprintf(ft, "CALL 0\n");
 	fprintf(ft, "POP R%d\n", temp);
 	fprintf(ft, "POP R%d\n", temp);
-	fprintf(ft, "POP R%d\n", res);
 	fprintf(ft, "POP R%d\n", temp);
 	fprintf(ft, "POP R%d\n", temp);
+	fprintf(ft, "POP R%d\n", temp);
+	temp = freeReg();
+	if (temp == -1)
+		exit(1);
+	id = freeReg();
+	if (id == -1)
+		exit(1);
+	return 1;
+}
+
+void code_generator_util(FILE *ft, struct AST_Node *root)
+{
+	if (root)
+	{
+		if (root->nodetype == EXPRESSION && root->type == ASSIGNMENT)
+		{
+			assignment_code_generator(ft, root);
+			return;
+		}
+		if (root->nodetype == STATEMENT && root->type == READ)
+		{
+			read_code_generator(ft, root);
+			return;
+		}
+		if (root->nodetype == STATEMENT && root->type == WRITE)
+		{
+			write_code_generator(ft, root);
+			return;
+		}
+		code_generator_util(ft, root->left);
+		code_generator_util(ft, root->right);
+	}
+	return;
+}
+
+void code_generator(FILE *ft, struct AST_Node *root)
+{
+	init_reg_pool();
+	allocate();
+	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
+	fprintf(ft, "BRKP\n");
+	fprintf(ft, "MOV SP,4121\n");
+	code_generator_util(ft, root);
+	reg_idx temp = getReg();
+	if (temp == -1)
+		exit(1);
 	fprintf(ft, "MOV R%d,\"Exit\"\n", temp);
 	fprintf(ft, "PUSH R%d\n", temp);
 	fprintf(ft, "PUSH R%d\n", temp);
@@ -199,5 +327,90 @@ void code_generator(FILE *ft, struct ET_Node *root)
 	fprintf(ft, "PUSH R%d\n", temp);
 	fprintf(ft, "CALL 0\n");
 	fclose(ft);
+}
+//-----------------------------------------------------------------------------------
+
+//----------------------------------Evaluator----------------------------------------
+int expression_evaluator(struct AST_Node *root)
+{
+	if (root->nodetype == CONSTANT && root->type == INTEGER && root->oper == NULL)
+	{
+		int ans = root->val;
+		return ans;
+	}
+	if (root->nodetype == VARIABLE && root->type == INTEGER && root->varname != NULL)
+	{
+		int aRes = *(root->varname) - 'a';
+		return storage[aRes];
+	}
+	else
+	{
+		int a = expression_evaluator(root->left);
+		int b = expression_evaluator(root->right);
+		switch (*(root->oper))
+		{
+		case '+':
+			return (a + b);
+			break;
+		case '-':
+			return (a - b);
+			break;
+		case '/':
+			return (a / b);
+			break;
+		case '*':
+			return (a * b);
+			break;
+		}
+	}
+}
+
+void assignment_evaluator(struct AST_Node *root)
+{
+	int ans = expression_evaluator(root->right);
+	int aRes = *(root->left->varname) - 'a';
+	storage[aRes] = ans;
+	return;
+}
+void write_evaluator(struct AST_Node *root)
+{
+	int ans = expression_evaluator(root->left);
+	printf("%d\n", ans);
+	return;
+}
+void read_evaluator(struct AST_Node *root)
+{
+	int aRes = *(root->left->varname) - 'a';
+	scanf("%d", &storage[aRes]);
+	return;
+}
+void evaluator_util(struct AST_Node *root)
+{
+	if (root)
+	{
+		if (root->nodetype == EXPRESSION && root->type == ASSIGNMENT)
+		{
+			assignment_evaluator(root);
+			return;
+		}
+		if (root->nodetype == STATEMENT && root->type == READ)
+		{
+			read_evaluator(root);
+			return;
+		}
+		if (root->nodetype == STATEMENT && root->type == WRITE)
+		{
+			write_evaluator(root);
+			return;
+		}
+		evaluator_util(root->left);
+		evaluator_util(root->right);
+	}
+	return;
+}
+void evaluator(struct AST_Node *root)
+{
+	clear_storage();
+	evaluator_util(root);
 }
 //-----------------------------------------------------------------------------------

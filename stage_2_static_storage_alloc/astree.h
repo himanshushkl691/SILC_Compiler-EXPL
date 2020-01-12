@@ -22,17 +22,20 @@ struct AST_Node
 	char *varname;
 	int nodetype;
 	char *oper;
+	char *s;
 	struct AST_Node *left, *right;
 };
 
 int address[26];
+int storage[26];
 
 void allocate();
-struct AST_Node *makeVariableLeafNode(int, int, char);
-struct AST_Node *makeConstantLeafNode(int, int, int);
-struct AST_Node *makeStatementNode(int, int, struct AST_Node *, struct AST_Node *);
-struct AST_Node *makeExpressionNode(int, int, char, struct AST_Node *, struct AST_Node *);
-struct AST_Node *makeRWNode(int, int, struct AST_Node *);
+void clear_storage();
+struct AST_Node *makeVariableLeafNode(int, int, char, char *);
+struct AST_Node *makeConstantLeafNode(int, int, int, char *);
+struct AST_Node *makeStatementNode(int, int, struct AST_Node *, struct AST_Node *, char *);
+struct AST_Node *makeExpressionNode(int, int, char, struct AST_Node *, struct AST_Node *, char *);
+struct AST_Node *makeRWNode(int, int, struct AST_Node *, char *);
 void print_tree(struct AST_Node *);
 //----------------------------------------------------------------------------------------------------------
 
@@ -45,6 +48,13 @@ void init_reg_pool();
 reg_idx getReg();
 //releases greatest i where Ri is allocated register
 reg_idx freeReg();
-reg_idx code_generator_util(FILE *,struct AST_Node *);
-void code_generator(FILE *,struct AST_Node *);
+//------------------------------------------------------------------------------------------------------------------------
+
+//-----------------------------------------Code Generation Function-------------------------------------------------------
+int expression_evaluator(struct AST_Node *);
+void assignment_evaluator(struct AST_Node *);
+void read_evaluator(struct AST_Node *);
+void write_evaluator(struct AST_Node *);
+void evaluator_util(struct AST_Node *);
+void evaluator(struct AST_Node *);
 //------------------------------------------------------------------------------------------------------------------------
