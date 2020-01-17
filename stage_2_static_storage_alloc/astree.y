@@ -18,14 +18,14 @@
 %left _MUL _DIV
 
 %%
-program:    _BEGIN _FINISHED Slist _END {
-    $$ = $4;
+program:    _BEGIN Slist _END {
+    $$ = $3;
     printf("Parsing completed\n");
-    code_generator(ft,$3);
+    code_generator(ft,$2);
     exit(1);
 }
-|   _BEGIN _FINISHED _END   {
-        $$ = $3;
+|   _BEGIN  _END   {
+        $$ = $2;
         printf("Parsing Completed\n");
         exit(1);
     }
@@ -47,14 +47,14 @@ stmt:   Inputstmt {
     $$ = $1;
 }
 ;
-Inputstmt:  _READ '(' _ID ')' ';'  _FINISHED{
+Inputstmt:  _READ '(' _ID ')' ';'{
     $$ = makeStatementNode(STATEMENT,READ,$3,(struct AST_Node *)NULL,"Read");
 }
 ;
-Outputstmt: _WRITE '(' expr ')' ';' _FINISHED {
+Outputstmt: _WRITE '(' expr ')' ';' {
     $$ = makeStatementNode(STATEMENT,WRITE,$3,(struct AST_Node *)NULL,"Write");
 };
-Assgstmt:   id '=' expr ';' _FINISHED {
+Assgstmt:   id '=' expr ';'{
     $$ = makeExpressionNode(EXPRESSION,ASSIGNMENT,'=',$1,$3,"=");
 }
 ;

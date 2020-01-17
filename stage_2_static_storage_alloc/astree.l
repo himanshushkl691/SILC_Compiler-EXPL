@@ -25,7 +25,7 @@ write {return _WRITE;}
 "/" {return _DIV;}
 "=" {return *yytext;}
 [ \t]   {}
-[\n]    {return _FINISHED;}
+[\n]    {}
 .   {yyerror("Unknown character\n");exit(1);}
 %%
 int yywrap(){

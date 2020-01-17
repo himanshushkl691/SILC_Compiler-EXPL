@@ -1,6 +1,3 @@
-begin
-read(a);
-read(b);
-c = a * 2 + b;
-write(c);
+begin a = 5;
+b = a + 1;write(b);
 end
