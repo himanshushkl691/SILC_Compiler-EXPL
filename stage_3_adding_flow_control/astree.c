@@ -148,14 +148,14 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root)
 	if (root->nodetype == CONSTANT && root->type == INTEGER && root->oper == NULL)
 	{
 		reg_idx id = getReg();
-		fprintf(ft, "MOV R%d,%d\n", id, root->val);
+		fprintf(ft, "MOV R%d, %d\n", id, root->val);
 		return id;
 	}
 	if (root->nodetype == VARIABLE && root->type == INTEGER && root->varname != NULL)
 	{
 		int aRes = address[*(root->varname) - 'a'];
 		reg_idx id = getReg();
-		fprintf(ft, "MOV R%d,[%d]\n", id, aRes);
+		fprintf(ft, "MOV R%d, [%d]\n", id, aRes);
 		return id;
 	}
 	else
@@ -166,22 +166,22 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root)
 		switch (*(root->oper))
 		{
 		case '+':
-			fprintf(ft, "ADD R%d,R%d\n", a, b);
+			fprintf(ft, "ADD R%d, R%d\n", a, b);
 			id = freeReg();
 			return a;
 			break;
 		case '-':
-			fprintf(ft, "SUB R%d,R%d\n", a, b);
+			fprintf(ft, "SUB R%d, R%d\n", a, b);
 			id = freeReg();
 			return a;
 			break;
 		case '/':
-			fprintf(ft, "DIV R%d,R%d\n", a, b);
+			fprintf(ft, "DIV R%d, R%d\n", a, b);
 			id = freeReg();
 			return a;
 			break;
 		case '*':
-			fprintf(ft, "MUL R%d,R%d\n", a, b);
+			fprintf(ft, "MUL R%d, R%d\n", a, b);
 			id = freeReg();
 			return a;
 			break;
@@ -195,7 +195,7 @@ int assignment_code_generator(FILE *ft, struct AST_Node *root)
 	{
 		reg_idx id = expression_code_generator(ft, root->right);
 		int aRes = address[*(root->left->varname) - 'a'];
-		fprintf(ft, "MOV [%d],R%d\n", aRes, id);
+		fprintf(ft, "MOV [%d], R%d\n", aRes, id);
 		id = freeReg();
 		return 1;
 	}
@@ -210,9 +210,9 @@ int write_code_generator(FILE *ft, struct AST_Node *root)
 	{
 		reg_idx id = expression_code_generator(ft, root->left);
 		reg_idx temp = getReg();
-		fprintf(ft, "MOV R%d,\"Write\"\n", temp);
+		fprintf(ft, "MOV R%d, \"Write\"\n", temp);
 		fprintf(ft, "PUSH R%d\n", temp);
-		fprintf(ft, "MOV R%d,-2\n", temp);
+		fprintf(ft, "MOV R%d, -2\n", temp);
 		fprintf(ft, "PUSH R%d\n", temp);
 		fprintf(ft, "PUSH R%d\n", id);
 		fprintf(ft, "PUSH R%d\n", temp);
@@ -238,10 +238,10 @@ int read_code_generator(FILE *ft, struct AST_Node *root)
 		int aRes = address[*(root->left->varname) - 'a'];
 		reg_idx id = getReg();
 		reg_idx temp = getReg();
-		fprintf(ft, "MOV R%d,%d\n", id, aRes);
-		fprintf(ft, "MOV R%d,\"Read\"\n", temp);
+		fprintf(ft, "MOV R%d, %d\n", id, aRes);
+		fprintf(ft, "MOV R%d, \"Read\"\n", temp);
 		fprintf(ft, "PUSH R%d\n", temp);
-		fprintf(ft, "MOV R%d,-1\n", temp);
+		fprintf(ft, "MOV R%d, -1\n", temp);
 		fprintf(ft, "PUSH R%d\n", temp);
 		fprintf(ft, "PUSH R%d\n", id);
 		fprintf(ft, "PUSH R%d\n", temp);
@@ -267,26 +267,26 @@ void boolean_code_generator(FILE *ft, struct AST_Node *root, int label)
 		switch (root->type)
 		{
 		case LT:
-			fprintf(ft, "LT R%d,R%d\n", a, b);
+			fprintf(ft, "LT R%d, R%d\n", a, b);
 			break;
 		case LE:
-			fprintf(ft, "LE R%d,R%d\n", a, b);
+			fprintf(ft, "LE R%d, R%d\n", a, b);
 			break;
 		case GT:
-			fprintf(ft, "GT R%d,R%d\n", a, b);
+			fprintf(ft, "GT R%d, R%d\n", a, b);
 			break;
 		case GE:
-			fprintf(ft, "GE R%d,R%d\n", a, b);
+			fprintf(ft, "GE R%d, R%d\n", a, b);
 			break;
 		case EQ:
-			fprintf(ft, "EQ R%d,R%d\n", a, b);
+			fprintf(ft, "EQ R%d, R%d\n", a, b);
 			break;
 		case NE:
-			fprintf(ft, "NE R%d,R%d\n", a, b);
+			fprintf(ft, "NE R%d, R%d\n", a, b);
 			break;
 		}
 		reg_idx temp = freeReg();
-		fprintf(ft, "JZ R%d,_L%d\n", a, label);
+		fprintf(ft, "JZ R%d, _L%d\n", a, label);
 		temp = freeReg();
 		return;
 	}
@@ -383,10 +383,10 @@ void code_generator(FILE *ft, struct AST_Node *root)
 	LABEL = -1;
 	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
 	fprintf(ft, "BRKP\n");
-	fprintf(ft, "MOV SP,4121\n");
+	fprintf(ft, "MOV SP, 4121\n");
 	code_generator_util(ft, root);
 	reg_idx temp = getReg();
-	fprintf(ft, "MOV R%d,\"Exit\"\n", temp);
+	fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
 	fprintf(ft, "PUSH R%d\n", temp);
 	fprintf(ft, "PUSH R%d\n", temp);
 	fprintf(ft, "PUSH R%d\n", temp);
