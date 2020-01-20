@@ -1,9 +1,14 @@
 begin
-read(a);
-c = 0;
-while(a != 0) do
-	c = c + a;
-	read(a);
+a = 0;
+while(a < 5) do
+	write(a);
+	if(a == 3) then
+		a = a + 1;
+		continue;
+	endif
+	breakpoint;
+	write(a + 1);
+	a = a + 1;
 endwhile
-write(c);
+continue;
 end

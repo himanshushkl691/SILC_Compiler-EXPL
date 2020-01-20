@@ -12,8 +12,8 @@
     struct AST_Node *node;
 };
 
-%type <node> program    Slist   stmt    Inputstmt   Outputstmt  Assgstmt  Ifstmt  id  expr    _FINISHED   _ID _NUM _END boolstmt Whilestmt
-%token _PLUS _MINUS _MUL _DIV _ID _NUM _BEGIN _END _READ _WRITE _FINISHED _LT _LE _GT _GE _NE _EQ _IF _THEN _ELSE _ENDIF _WHILE _DO _ENDWHILE
+%type <node> program Slist stmt Inputstmt Outputstmt Assgstmt Ifstmt id expr _FINISHED _ID _NUM _END boolstmt Whilestmt _BREAK _CONTINUE _BREAKPOINT
+%token _PLUS _MINUS _MUL _DIV _ID _NUM _BEGIN _END _READ _WRITE _FINISHED _LT _LE _GT _GE _NE _EQ _IF _THEN _ELSE _ENDIF _WHILE _DO _ENDWHILE _BREAK _CONTINUE _BREAKPOINT
 %left _PLUS _MINUS
 %left _MUL _DIV
 
@@ -51,6 +51,15 @@ stmt:	Inputstmt {
 }
 |	Whilestmt{
 	$$ = $1;
+}
+|   _BREAK ';'  {
+    $$ = $1;
+}
+|   _CONTINUE ';'   {
+    $$ = $1;
+}
+|   _BREAKPOINT ';' {
+    $$ = $1;
 }
 ;
 Inputstmt:  _READ '(' _ID ')' ';'{

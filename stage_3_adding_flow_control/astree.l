@@ -21,6 +21,9 @@ endif		{return _ENDIF;}
 while		{return _WHILE;}
 do		    {return _DO;}
 endwhile	{return _ENDWHILE;}
+break       {yylval.node = makeCBNode(BREAK,BREAK,yytext);return _BREAK;}
+continue    {yylval.node = makeCBNode(CONTINUE,CONTINUE,yytext);return _CONTINUE;}
+breakpoint  {yylval.node = makeCBNode(BREAKPOINT,BREAKPOINT,yytext);return _BREAKPOINT;}
 {alpha} 	{yylval.node = makeVariableLeafNode(VARIABLE,INTEGER,*yytext,yytext);return _ID;}
 {digit} 	{number = atoi(yytext);yylval.node = makeConstantLeafNode(CONSTANT,INTEGER,number,yytext);return _NUM;}
 ";" 		{return *yytext;}

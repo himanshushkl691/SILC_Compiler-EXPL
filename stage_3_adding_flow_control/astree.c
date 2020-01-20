@@ -15,6 +15,19 @@ void clear_storage()
 		storage[i] = 0;
 	return;
 }
+
+void init_Label()
+{
+	LABEL = 0;
+	return;
+}
+
+int getLabel()
+{
+	int a = LABEL;
+	LABEL++;
+	return a;
+}
 //-------------------------------------------------------------------------------------------------------
 
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
@@ -43,6 +56,19 @@ struct AST_Node *makeConstantLeafNode(int nodetype, int type, int val, char *s)
 	newn->nodetype = nodetype;
 	newn->type = type;
 	newn->val = val;
+	newn->left = newn->right = NULL;
+	newn->oper = newn->varname = NULL;
+	return newn;
+}
+
+//for break and continue
+struct AST_Node *makeCBNode(int nodetype, int type, char *s)
+{
+	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->nodetype = nodetype;
+	newn->type = type;
+	newn->s = (char *)malloc(strlen(s) * sizeof(char));
+	newn->s = strdup(s);
 	newn->left = newn->right = NULL;
 	newn->oper = newn->varname = NULL;
 	return newn;
@@ -294,44 +320,44 @@ void boolean_code_generator(FILE *ft, struct AST_Node *root, int label)
 	exit(1);
 }
 
-void if_else_code_generator(FILE *ft, struct AST_Node *root, int label)
+void if_else_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
 {
 	if (root)
 	{
 		if (root->left)
 		{
+			int first_label = getLabel();
+			int second_label = getLabel();
 			if (root->left->left)
-				boolean_code_generator(ft, root->left->left, label);
+				boolean_code_generator(ft, root->left->left, first_label);
 			if (root->left->right)
-				code_generator_util(ft, root->left->right);
+				code_generator_util(ft, root->left->right, blabel, clabel);
+			fprintf(ft, "JMP _L%d\n", second_label);
+			fprintf(ft, "_L%d:\n", first_label);
+			if (root->right)
+				code_generator_util(ft, root->right, blabel, clabel);
+			fprintf(ft, "_L%d:\n", second_label);
 		}
-		LABEL++;
-		int temp = LABEL;
-		fprintf(ft, "JMP _L%d\n", LABEL);
-		fprintf(ft, "_L%d:\n", label);
-		if (root->right)
-			code_generator_util(ft, root->right);
-		fprintf(ft, "_L%d:\n", temp);
 		return;
 	}
 	printf("Invalid IF_ELSE node\n");
 	return;
 }
 
-void while_code_generator(FILE *ft, struct AST_Node *root, int label)
+void while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
 {
 	if (root)
 	{
 		if (root->left)
 		{
-			fprintf(ft, "_L%d:\n", label);
-			LABEL++;
-			int temp = LABEL;
-			boolean_code_generator(ft, root->left, LABEL);
+			int first_label = getLabel();
+			int second_label = getLabel();
+			fprintf(ft, "_L%d:\n", first_label);
+			boolean_code_generator(ft, root->left, second_label);
 			if (root->right)
-				code_generator_util(ft, root->right);
-			fprintf(ft, "JMP _L%d\n", label);
-			fprintf(ft, "_L%d:\n", temp);
+				code_generator_util(ft, root->right, second_label, first_label);
+			fprintf(ft, "JMP _L%d\n", first_label);
+			fprintf(ft, "_L%d:\n", second_label);
 		}
 		return;
 	}
@@ -339,7 +365,29 @@ void while_code_generator(FILE *ft, struct AST_Node *root, int label)
 	return;
 }
 
-void code_generator_util(FILE *ft, struct AST_Node *root)
+void break_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+{
+	if (blabel == -1)
+		return;
+	fprintf(ft, "JMP _L%d\n", blabel);
+	return;
+}
+
+void continue_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+{
+	if (clabel == -1)
+		return;
+	fprintf(ft, "JMP _L%d\n", clabel);
+	return;
+}
+
+void breakpoint_code_generator(FILE *ft, struct AST_Node *root)
+{
+	fprintf(ft, "BRKP\n");
+	return;
+}
+
+void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel)
 {
 	if (root)
 	{
@@ -360,18 +408,31 @@ void code_generator_util(FILE *ft, struct AST_Node *root)
 		}
 		if (root->nodetype == STATEMENT && root->type == IF_ELSE)
 		{
-			LABEL++;
-			if_else_code_generator(ft, root, LABEL);
+			if_else_code_generator(ft, root, blabel, clabel);
 			return;
 		}
 		if (root->nodetype == STATEMENT && root->type == WHILE)
 		{
-			LABEL++;
-			while_code_generator(ft, root, LABEL);
+			while_code_generator(ft, root, blabel, clabel);
 			return;
 		}
-		code_generator_util(ft, root->left);
-		code_generator_util(ft, root->right);
+		if (root->nodetype == BREAK)
+		{
+			break_code_generator(ft, root, blabel, clabel);
+			return;
+		}
+		if (root->nodetype == CONTINUE)
+		{
+			continue_code_generator(ft, root, blabel, clabel);
+			return;
+		}
+		if (root->nodetype == BREAKPOINT)
+		{
+			breakpoint_code_generator(ft, root);
+			return;
+		}
+		code_generator_util(ft, root->left, blabel, clabel);
+		code_generator_util(ft, root->right, blabel, clabel);
 	}
 	return;
 }
@@ -380,11 +441,10 @@ void code_generator(FILE *ft, struct AST_Node *root)
 {
 	init_reg_pool();
 	allocate();
-	LABEL = -1;
+	init_Label();
 	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
-	fprintf(ft, "BRKP\n");
 	fprintf(ft, "MOV SP, 4121\n");
-	code_generator_util(ft, root);
+	code_generator_util(ft, root, -1, -1);
 	reg_idx temp = getReg();
 	fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
 	fprintf(ft, "PUSH R%d\n", temp);

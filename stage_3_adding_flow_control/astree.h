@@ -24,6 +24,9 @@
 #define ELSE 23
 #define IF_ELSE 24
 #define WHILE 25
+#define BREAK 26
+#define CONTINUE 27
+#define BREAKPOINT 28
 
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
 struct AST_Node
@@ -41,10 +44,17 @@ int address[26];
 int storage[26];
 int LABEL;
 
+//address for identifiers [a-z]
 void allocate();
 void clear_storage();
+//for obtaining Labels
+void init_Label();
+int getLabel();
+//function declaration for Abstract Syntax Tree
 struct AST_Node *makeVariableLeafNode(int, int, char, char *);
 struct AST_Node *makeConstantLeafNode(int, int, int, char *);
+struct AST_Node *makeCBNode(int, int, char *);
+struct AST_Node *makeContinueNode(int, int, char *);
 struct AST_Node *makeStatementNode(int, int, struct AST_Node *, struct AST_Node *, char *);
 struct AST_Node *makeExpressionNode(int, int, char, struct AST_Node *, struct AST_Node *, char *);
 struct AST_Node *makeRWNode(int, int, struct AST_Node *, char *);
@@ -63,12 +73,18 @@ reg_idx freeReg();
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------Code Generation Function-------------------------------------------------------
-reg_idx expression_code_generator(FILE *ft, struct AST_Node *);
-int assignment_code_generator(FILE *ft, struct AST_Node *);
-int read_code_generator(FILE *ft, struct AST_Node *);
-int write_code_generator(FILE *ft, struct AST_Node *);
-void code_generator_util(FILE *ft, struct AST_Node *);
-void code_generator(FILE *ft, struct AST_Node *);
+reg_idx expression_code_generator(FILE *, struct AST_Node *);
+int assignment_code_generator(FILE *, struct AST_Node *);
+int read_code_generator(FILE *, struct AST_Node *);
+int write_code_generator(FILE *, struct AST_Node *);
+void boolean_code_generator(FILE *, struct AST_Node *, int);
+void if_else_code_generator(FILE *, struct AST_Node *, int, int);
+void while_code_generator(FILE *, struct AST_Node *, int, int);
+void break_code_generator(FILE *, struct AST_Node *, int, int);
+void continue_code_generator(FILE *, struct AST_Node *, int, int);
+void breakpoint_code_generator(FILE *, struct AST_Node *);
+void code_generator_util(FILE *, struct AST_Node *, int, int);
+void code_generator(FILE *, struct AST_Node *);
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------------Evaluator Function-------------------------------------------------------
