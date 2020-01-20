@@ -365,6 +365,47 @@ void while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabe
 	return;
 }
 
+void do_while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+{
+	if (root)
+	{
+		if (root->right)
+		{
+			int first_label = getLabel();
+			int second_label = getLabel();
+			fprintf(ft, "_L%d:\n", first_label);
+			if (root->left)
+				code_generator_util(ft, root->left, second_label, first_label);
+			boolean_code_generator(ft, root->right, second_label);
+			fprintf(ft, "JMP _L%d\n", first_label);
+			fprintf(ft, "_L%d:\n", second_label);
+		}
+		return;
+	}
+	printf("Invalid DO_WHILE node\n");
+	return;
+}
+
+void repeat_until_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+{
+	if (root)
+	{
+		if (root->right)
+		{
+			int first_label = getLabel();
+			int second_label = getLabel();
+			fprintf(ft, "_L%d:\n", first_label);
+			if (root->left)
+				code_generator_util(ft, root->left, second_label, first_label);
+			boolean_code_generator(ft, root->right, first_label);
+			fprintf(ft, "_L%d:\n", second_label);
+		}
+		return;
+	}
+	printf("Invalid REPEAT_UNTIL node\n");
+	return;
+}
+
 void break_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
 {
 	if (blabel == -1)
@@ -411,9 +452,19 @@ void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel
 			if_else_code_generator(ft, root, blabel, clabel);
 			return;
 		}
-		if (root->nodetype == STATEMENT && root->type == WHILE)
+		if (root->nodetype == LOOP && root->type == WHILE)
 		{
 			while_code_generator(ft, root, blabel, clabel);
+			return;
+		}
+		if (root->nodetype == LOOP && root->type == DO_WHILE)
+		{
+			do_while_code_generator(ft, root, blabel, clabel);
+			return;
+		}
+		if (root->nodetype == LOOP && root->type == REPEAT_UNTIL)
+		{
+			repeat_until_code_generator(ft, root, blabel, clabel);
 			return;
 		}
 		if (root->nodetype == BREAK)

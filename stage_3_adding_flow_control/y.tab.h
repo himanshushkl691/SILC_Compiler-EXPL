@@ -71,7 +71,9 @@ extern int yydebug;
     _ENDWHILE = 281,
     _BREAK = 282,
     _CONTINUE = 283,
-    _BREAKPOINT = 284
+    _BREAKPOINT = 284,
+    _REPEAT = 285,
+    _UNTIL = 286
   };
 #endif
 /* Tokens.  */
@@ -102,6 +104,8 @@ extern int yydebug;
 #define _BREAK 282
 #define _CONTINUE 283
 #define _BREAKPOINT 284
+#define _REPEAT 285
+#define _UNTIL 286
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -112,7 +116,7 @@ union YYSTYPE
 
     struct AST_Node *node;
 
-#line 116 "y.tab.h" /* yacc.c:1909  */
+#line 120 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

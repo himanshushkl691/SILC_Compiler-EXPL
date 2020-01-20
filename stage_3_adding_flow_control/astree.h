@@ -27,6 +27,9 @@
 #define BREAK 26
 #define CONTINUE 27
 #define BREAKPOINT 28
+#define LOOP 29
+#define REPEAT_UNTIL 30
+#define DO_WHILE 31
 
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
 struct AST_Node
@@ -83,6 +86,8 @@ void while_code_generator(FILE *, struct AST_Node *, int, int);
 void break_code_generator(FILE *, struct AST_Node *, int, int);
 void continue_code_generator(FILE *, struct AST_Node *, int, int);
 void breakpoint_code_generator(FILE *, struct AST_Node *);
+void repeat_until_code_generator(FILE *, struct AST_Node *, int, int);
+void do_while_code_generator(FILE *, struct AST_Node *, int, int);
 void code_generator_util(FILE *, struct AST_Node *, int, int);
 void code_generator(FILE *, struct AST_Node *);
 //------------------------------------------------------------------------------------------------------------------------

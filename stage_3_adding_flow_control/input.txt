@@ -1,14 +1,11 @@
 begin
-a = 0;
-while(a < 5) do
-	write(a);
-	if(a == 3) then
-		a = a + 1;
-		continue;
-	endif
-	breakpoint;
-	write(a + 1);
-	a = a + 1;
-endwhile
-continue;
+n = 6;
+repeat{
+	write(123);
+	if(n == 5) then
+		write(321);
+		break;
+	endif;
+	n = n - 1;
+}until(n == 0);
 end

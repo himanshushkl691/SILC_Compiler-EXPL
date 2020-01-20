@@ -21,6 +21,8 @@ endif		{return _ENDIF;}
 while		{return _WHILE;}
 do		    {return _DO;}
 endwhile	{return _ENDWHILE;}
+repeat      {return _REPEAT;}
+until       {return _UNTIL;}
 break       {yylval.node = makeCBNode(BREAK,BREAK,yytext);return _BREAK;}
 continue    {yylval.node = makeCBNode(CONTINUE,CONTINUE,yytext);return _CONTINUE;}
 breakpoint  {yylval.node = makeCBNode(BREAKPOINT,BREAKPOINT,yytext);return _BREAKPOINT;}
@@ -29,6 +31,8 @@ breakpoint  {yylval.node = makeCBNode(BREAKPOINT,BREAKPOINT,yytext);return _BREA
 ";" 		{return *yytext;}
 "(" 		{return *yytext;}
 ")" 		{return *yytext;}
+"{"         {return *yytext;}
+"}"         {return *yytext;}
 "+" 		{return _PLUS;}
 "-" 		{return _MINUS;}
 "*" 		{return _MUL;}
