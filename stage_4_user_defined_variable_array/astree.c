@@ -1,14 +1,19 @@
 //--------------------------------------Static Storage Allocation---------------------------------------
-int allocate()
+void allocate()
 {
-	int a = ADDR;
-	ADDR++;
-	return a;
+	int curr = 4096;
+	for (int i = 0; i < 26; i++)
+	{
+		address[i] = curr;
+		curr++;
+	}
 }
 
-void init_storage()
+void clear_storage()
 {
-	ADDR = 4096;
+	for (int i = 0; i < 26; i++)
+		storage[i] = 0;
+	return;
 }
 
 void init_Label()
@@ -26,7 +31,7 @@ int getLabel()
 //-------------------------------------------------------------------------------------------------------
 
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
-struct AST_Node *makeVariableLeafNode(int nodetype, int type, char *varname, char *s)
+struct AST_Node *makeVariableLeafNode(int nodetype, int type, char varname, char *s)
 {
 	struct AST_Node *newn;
 	newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
@@ -35,8 +40,8 @@ struct AST_Node *makeVariableLeafNode(int nodetype, int type, char *varname, cha
 	newn->s = strdup(s);
 	newn->type = type;
 	newn->nodetype = nodetype;
-	newn->varname = (char *)malloc(strlen(varname) * sizeof(char));
-	newn->varname = strdup(varname);
+	newn->varname = (char *)malloc(sizeof(char));
+	*(newn->varname) = varname;
 	newn->left = newn->right = NULL;
 	newn->oper = NULL;
 	return newn;
@@ -122,64 +127,6 @@ void print_tree(struct AST_Node *root)
 	}
 }
 //----------------------------------------------------------------------------------------------------------
-
-//-----------------------------Global Symbol Table-----------------------------------
-struct GSTNode *init_node(int type, int size, char *s)
-{
-	struct GSTNode *newn = (struct GSTNode *)malloc(sizeof(struct GSTNode));
-	newn->varname = (char *)malloc(strlen(s) * sizeof(char));
-	newn->varname = strdup(s);
-	newn->type = type;
-	newn->size = size;
-	newn->binding_addr = allocate();
-	newn->next = NULL;
-	return newn;
-}
-
-struct GSTNode *LookUp(struct GSTNode *root, char *s)
-{
-	struct GSTNode *curr;
-	curr = root;
-	while (curr)
-	{
-		if (strlen(curr->varname, s) == 0)
-			return curr;
-		curr = curr->next;
-	}
-	return NULL;
-}
-
-struct GSTNode *Install(struct GSTNode *root, int type, int size, char *s)
-{
-	if (LookUp(root, s))
-	{
-		printf("Variable \"%s\" redeclared\n", s);
-		exit(0);
-	}
-	else
-	{
-		struct GSTNode *curr, *prev;
-		curr = root;
-		prev = NULL;
-		while (curr)
-		{
-			prev = curr;
-			curr = curr->next;
-		}
-		if (prev)
-			prev->next = init_node(type, size, s);
-		else
-			root = init_node(type, size, s);
-		if (LookUp(root, s))
-			return root;
-		else
-		{
-			printf("Variable install error\n");
-			exit(0);
-		}
-	}
-}
-//-----------------------------------------------------------------------------------
 
 //-----------------------------Register Allocation Functions-------------------------
 void init_reg_pool()
@@ -544,7 +491,7 @@ void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel
 void code_generator(FILE *ft, struct AST_Node *root)
 {
 	init_reg_pool();
-	init_storage();
+	allocate();
 	init_Label();
 	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
 	fprintf(ft, "MOV SP, 4121\n");
