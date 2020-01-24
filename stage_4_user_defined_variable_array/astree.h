@@ -33,6 +33,34 @@
 #define STRING 32
 #define NONE 33
 
+//-----------------------------------------Global Symbol Table----------------------------------------------
+struct GSTNode
+{
+	int type;
+	char *varname;
+	int binding_addr;
+	int size;
+	struct GSTNode *next;
+};
+
+//for creating
+struct GSTNode *init_node(int, int, char *);
+//checks whether id is already present in symbol table if it is returns pointer to it o/w NULL
+struct GSTNode *LookUp(struct GSTNode *, char *);
+//returns (1/0) whether id is installed or not in symbol table;
+struct GSTNode *InstallID(struct GSTNode *, int, int, char *);
+//function for changing type of a variable
+struct GSTNode *changeType(struct GSTNode *, int, char *);
+//function for changing size of a variable
+struct GSTNode *changeSize(struct GSTNode *, int, char *);
+//function for retrieving binding address of variable
+int getAddr(struct GSTNode *, char *);
+//for changing type of variable
+struct GSTNode *GSTchangeType(struct GSTNode *, int, char *);
+//printing Symbol Table
+void printGST(struct GSTNode *);
+//-------------------------------------------------------------------------------------------------------
+
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
 struct AST_Node
 {
@@ -71,31 +99,9 @@ struct AST_Node *makeStatementNode(int, int, struct AST_Node *, struct AST_Node 
 struct AST_Node *makeExpressionNode(int, int, char, struct AST_Node *, struct AST_Node *, char *);
 //makes and return read or write statement node
 struct AST_Node *makeRWNode(int, int, struct AST_Node *, char *);
+//for changing type of nodes according to symbol table
+struct AST_Node *ASTchangeType(struct GSTNode *, struct AST_Node *, int);
 void print_tree(struct AST_Node *);
-//----------------------------------------------------------------------------------------------------------
-
-//-----------------------------------------Global Symbol Table----------------------------------------------
-struct GSTNode
-{
-	int type;
-	char *varname;
-	int binding_addr;
-	int size;
-	struct GSTNode *next;
-};
-
-//for creating
-struct GSTNode *init_node(int, int, char *);
-//checks whether id is already present in symbol table if it is returns pointer to it o/w NULL
-struct GSTNode *LookUp(struct GSTNode *, char *);
-//returns (1/0) whether id is installed or not in symbol table;
-struct GSTNode *InstallID(struct GSTNode *, int, int, char *);
-//function for changing type of a variable
-struct GSTNode *changeType(struct GSTNode *, int, char *);
-//function for changing size of a variable
-struct GSTNode *changeSize(struct GSTNode *, int, char *);
-//function for retrieving binding address of variable
-int getAddr(struct GSTNode *, char *);
 //----------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------Register Allocation Strategy---------------------------------------------------

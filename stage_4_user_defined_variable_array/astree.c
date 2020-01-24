@@ -106,18 +106,6 @@ struct GSTNode *GSTchangeType(struct GSTNode *root, int type, char *s)
 	return root;
 }
 
-struct GSTNode *GSTchangeSize(struct GSTNode *root, int size, char *s)
-{
-	struct GSTNode *curr = LookUp(root, s);
-	if (!curr)
-	{
-		printf("ChangeSizeError: Variable not declared\n");
-		exit(1);
-	}
-	curr->size = size;
-	return root;
-}
-
 int getAddr(struct GSTNode *root, char *s)
 {
 	struct GSTNode *curr;

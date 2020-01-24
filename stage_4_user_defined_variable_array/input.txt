@@ -3,5 +3,5 @@ decl
 	str str1,str2,str3;
 enddecl
 begin
-	num1 = num2 + str4;
+	write("hello");
 end
