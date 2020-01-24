@@ -1,7 +1,0 @@
-decl
-	int a1,a2,a3;
-	str s1,s2,s3;
-enddecl
-begin
-	s1 = "hello world";
-end
