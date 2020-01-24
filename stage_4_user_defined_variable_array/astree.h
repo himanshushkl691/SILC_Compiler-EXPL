@@ -31,6 +31,7 @@
 #define REPEAT_UNTIL 30
 #define DO_WHILE 31
 #define STRING 32
+#define NONE 33
 
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
 struct AST_Node
@@ -60,6 +61,8 @@ int getLabel();
 struct AST_Node *makeVariableLeafNode(int, int, char *, char *);
 //for creating constant node
 struct AST_Node *makeConstantLeafNode(int, int, int, char *);
+//for creating constant string node
+struct AST_Node *makeConstantStringLeaf(int, int, char *);
 //for creating break and continue statement node
 struct AST_Node *makeCBNode(int, int, char *);
 //for creating Statement node of category nodetype inlcludes assignment statement
@@ -86,7 +89,13 @@ struct GSTNode *init_node(int, int, char *);
 //checks whether id is already present in symbol table if it is returns pointer to it o/w NULL
 struct GSTNode *LookUp(struct GSTNode *, char *);
 //returns (1/0) whether id is installed or not in symbol table;
-struct GSTNode *InstallID(struct GSTNode *, int, char *);
+struct GSTNode *InstallID(struct GSTNode *, int, int, char *);
+//function for changing type of a variable
+struct GSTNode *changeType(struct GSTNode *, int, char *);
+//function for changing size of a variable
+struct GSTNode *changeSize(struct GSTNode *, int, char *);
+//function for retrieving binding address of variable
+int getAddr(struct GSTNode *, char *);
 //----------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------Register Allocation Strategy---------------------------------------------------

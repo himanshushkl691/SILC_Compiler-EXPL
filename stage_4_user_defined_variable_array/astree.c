@@ -25,6 +25,112 @@ int getLabel()
 }
 //-------------------------------------------------------------------------------------------------------
 
+//-----------------------------Global Symbol Table-----------------------------------
+void printGST(struct GSTNode *root)
+{
+	struct GSTNode *curr = root;
+	while (curr)
+	{
+		printf("%s		%d			%d			%d\n", curr->varname, curr->type, curr->size, curr->binding_addr);
+		curr = curr->next;
+	}
+}
+
+struct GSTNode *init_node(int type, int size, char *s)
+{
+	struct GSTNode *newn = (struct GSTNode *)malloc(sizeof(struct GSTNode));
+	newn->varname = (char *)malloc(strlen(s) * sizeof(char));
+	newn->varname = strdup(s);
+	newn->type = type;
+	newn->size = size;
+	newn->binding_addr = allocate();
+	newn->next = NULL;
+	return newn;
+}
+
+struct GSTNode *LookUp(struct GSTNode *root, char *s)
+{
+	struct GSTNode *curr;
+	curr = root;
+	while (curr)
+	{
+		if (strcmp(curr->varname, s) == 0)
+			return curr;
+		curr = curr->next;
+	}
+	return NULL;
+}
+
+struct GSTNode *InstallID(struct GSTNode *root, int type, int size, char *s)
+{
+	if (LookUp(root, s))
+	{
+		printf("Variable \"%s\" redeclared\n", s);
+		exit(1);
+	}
+	else
+	{
+		struct GSTNode *curr, *prev;
+		curr = root;
+		prev = NULL;
+		while (curr)
+		{
+			prev = curr;
+			curr = curr->next;
+		}
+		if (prev)
+		{
+			prev->next = init_node(type, size, s);
+		}
+		else
+			root = init_node(type, size, s);
+		if (LookUp(root, s))
+			return root;
+		else
+		{
+			printf("Installation error\n");
+			exit(1);
+		}
+	}
+}
+
+struct GSTNode *GSTchangeType(struct GSTNode *root, int type, char *s)
+{
+	struct GSTNode *curr = LookUp(root, s);
+	if (!curr)
+	{
+		printf("ChangeTypeError: Variable not found\n");
+		exit(1);
+	}
+	curr->type = type;
+	return root;
+}
+
+struct GSTNode *GSTchangeSize(struct GSTNode *root, int size, char *s)
+{
+	struct GSTNode *curr = LookUp(root, s);
+	if (!curr)
+	{
+		printf("ChangeSizeError: Variable not declared\n");
+		exit(1);
+	}
+	curr->size = size;
+	return root;
+}
+
+int getAddr(struct GSTNode *root, char *s)
+{
+	struct GSTNode *curr;
+	curr = LookUp(root, s);
+	if (!curr)
+	{
+		printf("AddressRetrievalError: Variable not declared\n");
+		exit(1);
+	}
+	return (curr->binding_addr);
+}
+//-----------------------------------------------------------------------------------
+
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
 struct AST_Node *makeVariableLeafNode(int nodetype, int type, char *varname, char *s)
 {
@@ -51,6 +157,18 @@ struct AST_Node *makeConstantLeafNode(int nodetype, int type, int val, char *s)
 	newn->nodetype = nodetype;
 	newn->type = type;
 	newn->val = val;
+	newn->left = newn->right = NULL;
+	newn->oper = newn->varname = NULL;
+	return newn;
+}
+
+struct AST_Node *makeConstantStringLeaf(int nodetype, int type, char *s)
+{
+	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->s = (char *)malloc(strlen(s) * sizeof(char));
+	newn->s = strdup(s);
+	newn->nodetype = nodetype;
+	newn->type = type;
 	newn->left = newn->right = NULL;
 	newn->oper = newn->varname = NULL;
 	return newn;
@@ -121,66 +239,22 @@ void print_tree(struct AST_Node *root)
 		print_tree(root->right);
 	}
 }
+
+struct AST_Node *ASTchangeType(struct GSTNode *head, struct AST_Node *root, int type)
+{
+	if (root)
+	{
+		root->left = ASTchangeType(head, root->left, type);
+		root->right = ASTchangeType(head, root->right, type);
+		if (root->nodetype == VARIABLE)
+			head = GSTchangeType(head, type, root->varname);
+		root = NULL;
+		free(root);
+	}
+	return root;
+}
 //----------------------------------------------------------------------------------------------------------
-
-//-----------------------------Global Symbol Table-----------------------------------
-struct GSTNode *init_node(int type, int size, char *s)
-{
-	struct GSTNode *newn = (struct GSTNode *)malloc(sizeof(struct GSTNode));
-	newn->varname = (char *)malloc(strlen(s) * sizeof(char));
-	newn->varname = strdup(s);
-	newn->type = type;
-	newn->size = size;
-	newn->binding_addr = allocate();
-	newn->next = NULL;
-	return newn;
-}
-
-struct GSTNode *LookUp(struct GSTNode *root, char *s)
-{
-	struct GSTNode *curr;
-	curr = root;
-	while (curr)
-	{
-		if (strlen(curr->varname, s) == 0)
-			return curr;
-		curr = curr->next;
-	}
-	return NULL;
-}
-
-struct GSTNode *Install(struct GSTNode *root, int type, int size, char *s)
-{
-	if (LookUp(root, s))
-	{
-		printf("Variable \"%s\" redeclared\n", s);
-		exit(0);
-	}
-	else
-	{
-		struct GSTNode *curr, *prev;
-		curr = root;
-		prev = NULL;
-		while (curr)
-		{
-			prev = curr;
-			curr = curr->next;
-		}
-		if (prev)
-			prev->next = init_node(type, size, s);
-		else
-			root = init_node(type, size, s);
-		if (LookUp(root, s))
-			return root;
-		else
-		{
-			printf("Variable install error\n");
-			exit(0);
-		}
-	}
-}
-//-----------------------------------------------------------------------------------
-
+/*
 //-----------------------------Register Allocation Functions-------------------------
 void init_reg_pool()
 {
@@ -560,88 +634,4 @@ void code_generator(FILE *ft, struct AST_Node *root)
 	fclose(ft);
 }
 //-----------------------------------------------------------------------------------
-
-//----------------------------------Evaluator----------------------------------------
-int expression_evaluator(struct AST_Node *root)
-{
-	if (root->nodetype == CONSTANT && root->type == INTEGER && root->oper == NULL)
-	{
-		int ans = root->val;
-		return ans;
-	}
-	if (root->nodetype == VARIABLE && root->type == INTEGER && root->varname != NULL)
-	{
-		int aRes = *(root->varname) - 'a';
-		return storage[aRes];
-	}
-	else
-	{
-		int a = expression_evaluator(root->left);
-		int b = expression_evaluator(root->right);
-		switch (*(root->oper))
-		{
-		case '+':
-			return (a + b);
-			break;
-		case '-':
-			return (a - b);
-			break;
-		case '/':
-			return (a / b);
-			break;
-		case '*':
-			return (a * b);
-			break;
-		}
-	}
-}
-
-void assignment_evaluator(struct AST_Node *root)
-{
-	int ans = expression_evaluator(root->right);
-	int aRes = *(root->left->varname) - 'a';
-	storage[aRes] = ans;
-	return;
-}
-void write_evaluator(struct AST_Node *root)
-{
-	int ans = expression_evaluator(root->left);
-	printf("%d\n", ans);
-	return;
-}
-void read_evaluator(struct AST_Node *root)
-{
-	int aRes = *(root->left->varname) - 'a';
-	scanf("%d", &storage[aRes]);
-	return;
-}
-void evaluator_util(struct AST_Node *root)
-{
-	if (root)
-	{
-		if (root->nodetype == EXPRESSION && root->type == ASSIGNMENT)
-		{
-			assignment_evaluator(root);
-			return;
-		}
-		if (root->nodetype == STATEMENT && root->type == READ)
-		{
-			read_evaluator(root);
-			return;
-		}
-		if (root->nodetype == STATEMENT && root->type == WRITE)
-		{
-			write_evaluator(root);
-			return;
-		}
-		evaluator_util(root->left);
-		evaluator_util(root->right);
-	}
-	return;
-}
-void evaluator(struct AST_Node *root)
-{
-	clear_storage();
-	evaluator_util(root);
-}
-//-----------------------------------------------------------------------------------
+*/

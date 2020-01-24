@@ -1,0 +1,18 @@
+begin
+read(n);
+s = 0;
+i = 0;
+while(i < n) do
+	j = 0;
+	while(j < n) do
+		k = 0;
+		while(k < n) do
+			s = s + 1;
+			k = k + 1;
+		endwhile;
+		j = j + 1;
+	endwhile;
+	i = i + 1;
+endwhile;
+write(s);
+end

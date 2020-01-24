@@ -1,11 +1,7 @@
+decl
+	int a1,a2,a3;
+	str s1,s2,s3;
+enddecl
 begin
-n = 6;
-repeat{
-	write(123);
-	if(n == 5) then
-		write(321);
-		break;
-	endif;
-	n = n - 1;
-}until(n == 0);
+	s1 = "hello world";
 end

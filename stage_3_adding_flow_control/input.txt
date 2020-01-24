@@ -1,9 +1,17 @@
 begin
 read(a);
 read(b);
-if(a < b) then
-	write(a);
-else
-	write(b);
+read(c);
+read(d);
+e = a;
+if(b > e) then
+	e = b;
 endif;
+if(c > e) then
+	e = c;
+endif;
+if(d > e) then
+	e = d;
+endif;
+write(e);
 end
