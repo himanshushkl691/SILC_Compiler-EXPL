@@ -618,10 +618,10 @@ void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel
 void code_generator(FILE *ft, struct AST_Node *root)
 {
 	init_reg_pool();
-	init_storage();
 	init_Label();
+	int temp = allocate();
 	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
-	fprintf(ft, "MOV SP, 4121\n");
+	fprintf(ft, "MOV SP, %d\n", temp);
 	code_generator_util(ft, root, -1, -1);
 	reg_idx temp = getReg();
 	fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
@@ -633,5 +633,4 @@ void code_generator(FILE *ft, struct AST_Node *root)
 	fprintf(ft, "CALL 0\n");
 	fclose(ft);
 }
-//-----------------------------------------------------------------------------------
-*/
+//-----------------------------------------------------------------------------------*/

@@ -7,7 +7,7 @@
     int yylex(void);
     char *yytext;
     FILE *ft;
-    struct GSTNode *head;
+    struct GSTNode *head, *curr;
 %}
 
 %union{
@@ -21,10 +21,32 @@
 %start program
 
 %%
+//-------------------------Declarations-----------------------
+Declarations:   _DECL DeclList _ENDDECL  {printGST(head);}
+|   _DECL _ENDDECL  {}
+;
+DeclList:   DeclList Decl   {}
+|   Decl    {}
+;
+Decl:   _INT Varlist  ';' {
+    $$ = ASTchangeType(head,$2,INTEGER);
+}
+|   _STR Varlist  ';' {
+    $$ = ASTchangeType(head,$2,STRING);
+}
+;
+Varlist:    _ID{head = InstallID(head,NONE,1,yytext);$$ = $1;}
+|   Varlist ',' _ID{
+    head = InstallID(head,NONE,1,yytext);
+    $$ = makeStatementNode(STATEMENT,STATEMENT,$1,$3,",");
+}
+;
 //----------------------------Program---------------------
 program:    Declarations _BEGIN Slist _END {
     $$ = $3;
     printf("Parsing completed\n");
+    print_tree($3);
+    printf("\n");
     //code_generator(ft,$3);
     exit(1);
 }
@@ -82,6 +104,15 @@ Outputstmt: _WRITE '(' stringExp ')' ';' {
     	$$ = makeStatementNode(STATEMENT,WRITE,$3,(struct AST_Node *)NULL,"Write");
 };
 Assgstmt:   id '=' stringExp ';'{
+    int t1 = $1->type ,t2 = $3->type;
+    if(t1 == STRING && (t2 == PLUS || t2 == MINUS || t2 == MUL || t2 == DIV || t2 == INTEGER)){
+        printf("Variable %s is a string variable assigning expression\n",$1->varname);
+        exit(1);
+    }
+    if(t1 == INTEGER && t2 == STRING){
+        printf("Variable %s is an integer variable assigning string value\n",$1->varname);
+        exit(1);
+    }
 	$$ = makeExpressionNode(EXPRESSION,ASSIGNMENT,'=',$1,$3,"=");
 }
 ;
@@ -129,26 +160,6 @@ boolstmt:	expr _LT expr{
 	$$ = makeStatementNode(BOOLEAN,EQ,$1,$3,"EQ");
 }
 ;
-//-------------------------Declarations-----------------------
-Declarations:   _DECL DeclList _ENDDECL  {printGST(head);}
-|   _DECL _ENDDECL  {}
-;
-DeclList:   DeclList Decl   {}
-|   Decl    {}
-;
-Decl:   _INT Varlist  ';' {
-    $$ = ASTchangeType(head,$2,INTEGER);
-}
-|   _STR Varlist  ';' {
-    $$ = ASTchangeType(head,$2,STRING);
-}
-;
-Varlist:    _ID{head = InstallID(head,NONE,1,yytext);$$ = $1;}
-|   Varlist ',' _ID{
-    head = InstallID(head,NONE,1,yytext);
-    $$ = makeStatementNode(STATEMENT,STATEMENT,$1,$3,",");
-}
-;
 //--------------------------Expressions-----------------------
 expr:   expr _PLUS  expr    {
     $$ = makeExpressionNode(EXPRESSION,PLUS,'+',$1,$3,"+");
@@ -166,9 +177,29 @@ expr:   expr _PLUS  expr    {
     $$ = $2;
 }
 |   _NUM    {$$ = $1;}
-|   _ID     {$$ = $1;}
+|   _ID     {
+    $$ = $1;
+    curr = LookUp(head,$$->varname);
+    if(!curr){
+        printf("Variable %s not declared\n",$$->varname);
+        exit(1);
+    }
+    $$->type = curr->type;
+    if($$->type != INTEGER){
+        printf("Arithmetic operation on non-integer variable %s\n",$$->varname);
+        exit(1);
+    }
+}
 ;
-id: _ID {$$ = $1;}
+id: _ID {
+    $$ = $1;
+    curr = LookUp(head,$$->varname);
+    if(!curr){
+        printf("Variable %s not declared\n",$$->varname);
+        exit(1);
+    }
+    $$->type = curr->type;
+}
 ;
 %%
 void yyerror(const char *err){

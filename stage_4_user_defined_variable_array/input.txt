@@ -1,0 +1,7 @@
+decl
+	int num1,num2,num3;
+	str str1,str2,str3;
+enddecl
+begin
+	num1 = num2 + str4;
+end
