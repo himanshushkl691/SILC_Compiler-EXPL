@@ -6,7 +6,7 @@
     int number;
 %}
 
-alpha [a-z]
+alpha [a-zA-Z_]+
 digit [0-9]+
 
 %%
@@ -23,10 +23,12 @@ do		    {return _DO;}
 endwhile	{return _ENDWHILE;}
 repeat      {return _REPEAT;}
 until       {return _UNTIL;}
+int         {return _INT;}
+str         {return _STR;}
 break       {yylval.node = makeCBNode(BREAK,BREAK,yytext);return _BREAK;}
 continue    {yylval.node = makeCBNode(CONTINUE,CONTINUE,yytext);return _CONTINUE;}
 breakpoint  {yylval.node = makeCBNode(BREAKPOINT,BREAKPOINT,yytext);return _BREAKPOINT;}
-{alpha} 	{yylval.node = makeVariableLeafNode(VARIABLE,INTEGER,*yytext,yytext);return _ID;}
+({alpha}({alpha}|{digit})*) 	{yylval.node = makeVariableLeafNode(VARIABLE,INTEGER,yytext,yytext);return _ID;}
 {digit} 	{number = atoi(yytext);yylval.node = makeConstantLeafNode(CONSTANT,INTEGER,number,yytext);return _NUM;}
 ";" 		{return *yytext;}
 "(" 		{return *yytext;}
@@ -38,9 +40,9 @@ breakpoint  {yylval.node = makeCBNode(BREAKPOINT,BREAKPOINT,yytext);return _BREA
 "*" 		{return _MUL;}
 "/" 		{return _DIV;}
 "=" 		{return *yytext;}
-"<"		{return _LT;}
+"<"		    {return _LT;}
 ([<][=])	{return _LE;}
-">"		{return _GT;}
+">"		    {return _GT;}
 ([>][=])	{return _GE;}
 ([=][=])	{return _EQ;}
 ([!][=])	{return _NE;}

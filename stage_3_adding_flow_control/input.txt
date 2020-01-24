@@ -1,11 +1,9 @@
 begin
-n = 6;
-repeat{
-	write(123);
-	if(n == 5) then
-		write(321);
-		break;
-	endif;
-	n = n - 1;
-}until(n == 0);
+read(a);
+read(b);
+if(a < b) then
+	write(a);
+else
+	write(b);
+endif;
 end

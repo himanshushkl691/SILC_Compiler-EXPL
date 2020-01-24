@@ -30,7 +30,6 @@
 #define LOOP 29
 #define REPEAT_UNTIL 30
 #define DO_WHILE 31
-#define STRING 32
 
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
 struct AST_Node
@@ -44,49 +43,25 @@ struct AST_Node
 	struct AST_Node *left, *right;
 };
 
-int ADDR;
+int address[26];
+int storage[26];
 int LABEL;
 
-//returns next available address
-int allocate();
-//resets addr variable to zero
-void init_storage();
-//resets LABEL variable to 0
+//address for identifiers [a-z]
+void allocate();
+void clear_storage();
+//for obtaining Labels
 void init_Label();
-//returns next available LABEL
 int getLabel();
 //function declaration for Abstract Syntax Tree
-//for creating variable node
-struct AST_Node *makeVariableLeafNode(int, int, char *, char *);
-//for creating constant node
+struct AST_Node *makeVariableLeafNode(int, int, char, char *);
 struct AST_Node *makeConstantLeafNode(int, int, int, char *);
-//for creating break and continue statement node
 struct AST_Node *makeCBNode(int, int, char *);
-//for creating Statement node of category nodetype inlcludes assignment statement
+struct AST_Node *makeContinueNode(int, int, char *);
 struct AST_Node *makeStatementNode(int, int, struct AST_Node *, struct AST_Node *, char *);
-//for creating node for expressions left and right subtree are expression
 struct AST_Node *makeExpressionNode(int, int, char, struct AST_Node *, struct AST_Node *, char *);
-//makes and return read or write statement node
 struct AST_Node *makeRWNode(int, int, struct AST_Node *, char *);
 void print_tree(struct AST_Node *);
-//----------------------------------------------------------------------------------------------------------
-
-//-----------------------------------------Global Symbol Table----------------------------------------------
-struct GSTNode
-{
-	int type;
-	char *varname;
-	int binding_addr;
-	int size;
-	struct GSTNode *next;
-};
-
-//for creating
-struct GSTNode *init_node(int, int, char *);
-//checks whether id is already present in symbol table if it is returns pointer to it o/w NULL
-struct GSTNode *LookUp(struct GSTNode *, char *);
-//returns (1/0) whether id is installed or not in symbol table;
-struct GSTNode *InstallID(struct GSTNode *, int, char *);
 //----------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------Register Allocation Strategy---------------------------------------------------
