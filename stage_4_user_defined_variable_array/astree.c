@@ -397,6 +397,11 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTNod
 			id = freeReg();
 			return a;
 			break;
+		case '%':
+			fprintf(ft, "MOD R%d, R%d\n", a, b);
+			id = freeReg();
+			return a;
+			break;
 		}
 	}
 }

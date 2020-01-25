@@ -18,9 +18,9 @@
 };
 
 %type <node> program Slist stmt Inputstmt Outputstmt Assgstmt Ifstmt id expr _FINISHED _NUM _STRING _END boolstmt Whilestmt _BREAK _CONTINUE _BREAKPOINT RepeatUntil DoWhile DeclList Decl Declarations Varlist _ID stringExp
-%token _PLUS _MINUS _MUL _DIV _NUM _BEGIN _END _READ _WRITE _FINISHED _LT _LE _GT _GE _NE _EQ _IF _THEN _ELSE _ENDIF _WHILE _DO _ENDWHILE _BREAK _CONTINUE _BREAKPOINT _REPEAT _UNTIL _INT _STR _DECL _ENDDECL _ID _STRING
+%token _PLUS _MINUS _MUL _DIV _MOD _NUM _BEGIN _END _READ _WRITE _FINISHED _LT _LE _GT _GE _NE _EQ _IF _THEN _ELSE _ENDIF _WHILE _DO _ENDWHILE _BREAK _CONTINUE _BREAKPOINT _REPEAT _UNTIL _INT _STR _DECL _ENDDECL _ID _STRING
 %left _PLUS _MINUS
-%left _MUL _DIV
+%left _MUL _DIV _MOD
 %start program
 
 %%
@@ -158,7 +158,7 @@ DoWhile:    _DO '{' Slist '}' _WHILE '(' boolstmt ')' ';'   {
 ;
 boolstmt:	expr _LT expr{
     int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
         $$ = makeStatementNode(BOOLEAN,LT,$1,$3,"LT");
     else{
         printf("Invalid operand\n");
@@ -167,7 +167,7 @@ boolstmt:	expr _LT expr{
 }
 |	expr _LE expr{
     int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
         $$ = makeStatementNode(BOOLEAN,LE,$1,$3,"LE");
     else{
         printf("Invalid operand\n");
@@ -176,7 +176,7 @@ boolstmt:	expr _LT expr{
 }
 |	expr _GT expr{
     int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
         $$ = makeStatementNode(BOOLEAN,GT,$1,$3,"GT");
     else{
         printf("Invalid operand\n");
@@ -185,7 +185,7 @@ boolstmt:	expr _LT expr{
 }
 |	expr _GE expr{
     int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
         $$ = makeStatementNode(BOOLEAN,GE,$1,$3,"GE");
     else{
         printf("Invalid operand\n");
@@ -194,7 +194,7 @@ boolstmt:	expr _LT expr{
 }
 |	expr _NE expr{
     int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
         $$ = makeStatementNode(BOOLEAN,NE,$1,$3,"NE");
     else{
         printf("Invalid operand\n");
@@ -203,7 +203,7 @@ boolstmt:	expr _LT expr{
 }
 |	expr _EQ expr{
     int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
         $$ = makeStatementNode(BOOLEAN,EQ,$1,$3,"EQ");
     else{
         printf("Invalid operand\n");
@@ -214,7 +214,7 @@ boolstmt:	expr _LT expr{
 //--------------------------Expressions-----------------------
 expr:   expr _PLUS  expr    {
     int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
         $$ = makeExpressionNode(EXPRESSION,PLUS,'+',$1,$3,"+");
     else{
         printf("Invalid operand\n");
@@ -223,7 +223,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _MINUS expr     {
     int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
         $$ = makeExpressionNode(EXPRESSION,MINUS,'-',$1,$3,"-");
     else{
         printf("Invalid operand\n");
@@ -232,7 +232,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _MUL expr   {
     int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
         $$ = makeExpressionNode(EXPRESSION,MUL,'*',$1,$3,"*");
     else{
         printf("Invalid operand\n");
@@ -241,8 +241,17 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _DIV expr   {
     int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
         $$ = makeExpressionNode(EXPRESSION,DIV,'/',$1,$3,"/");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
+}
+|   expr _MOD expr {
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeExpressionNode(EXPRESSION,MOD,'%',$1,$3,"%");
     else{
         printf("Invalid operand\n");
         exit(1);

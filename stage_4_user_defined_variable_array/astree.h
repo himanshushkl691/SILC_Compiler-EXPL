@@ -34,6 +34,7 @@
 #define NONE 33
 #define RESERVED 34
 #define ARRAY_VARIABLE 35
+#define MOD 36
 
 int ADDR;
 int LABEL;

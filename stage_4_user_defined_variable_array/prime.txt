@@ -1,0 +1,29 @@
+
+
+decl
+	int n,i,j;
+enddecl
+begin
+	read(n);
+	j=0;
+	if(n == 1) then
+		j = 1;
+	endif;
+	if(n > 2) then
+		if(n%2 == 0) then
+			j=1;
+		else
+			i=3;
+			while(i * i <= n) do
+				if(n%i == 0) then
+					j=1;
+				endif;
+				i=i+2;
+			endwhile;
+		endif;
+	endif;
+	if(j==0) then
+		write("Prime");
+	else write("Not Prime");
+	endif;
+end

@@ -32,11 +32,8 @@ continue    {yylval.node = makeCBNode(CONTINUE,CONTINUE,yytext);return _CONTINUE
 breakpoint  {yylval.node = makeCBNode(BREAKPOINT,BREAKPOINT,yytext);return _BREAKPOINT;}
 ([\"](.)*[\"])  {yylval.node = makeConstantStringLeaf(CONSTANT,STRING,yytext);return _STRING;}
 ({alpha}({alpha}|{digit})*) 	{yylval.node = makeVariableLeafNode(VARIABLE,NONE,yytext,yytext);return _ID;}
-([-|+]?{digit}) 	{
-    if(*yytext == '-')
-        number = -1 * atoi(yytext + 1);
-    else
-        number = atoi(yytext);
+({digit}) 	{
+    number = atoi(yytext);
     yylval.node = makeConstantLeafNode(CONSTANT,INTEGER,number,yytext);
     return _NUM;
 }
@@ -52,6 +49,7 @@ breakpoint  {yylval.node = makeCBNode(BREAKPOINT,BREAKPOINT,yytext);return _BREA
 "-" 		{return _MINUS;}
 "*" 		{return _MUL;}
 "/" 		{return _DIV;}
+"%"         {return _MOD;}
 "=" 		{return *yytext;}
 "<"		    {return _LT;}
 ([<][=])	{return _LE;}
