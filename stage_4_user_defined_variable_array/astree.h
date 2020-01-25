@@ -33,6 +33,7 @@
 #define STRING 32
 #define NONE 33
 #define RESERVED 34
+#define ARRAY_VARIABLE 35
 
 int ADDR;
 int LABEL;
@@ -41,6 +42,7 @@ int LABEL;
 struct GSTNode
 {
 	int type;
+	int type_of_var;
 	char *varname;
 	int binding_addr;
 	int size;
@@ -48,17 +50,13 @@ struct GSTNode
 };
 
 //for creating
-struct GSTNode *init_node(int, int, char *);
+struct GSTNode *init_node(int, int, int, char *);
 //checks whether id is already present in symbol table if it is returns pointer to it o/w NULL
 struct GSTNode *LookUp(struct GSTNode *, char *);
 //installs identifier in symbol table
-struct GSTNode *InstallID(struct GSTNode *, int, int, char *);
+struct GSTNode *InstallID(struct GSTNode *, int, int, int, char *);
 //install reserved keywords in symbol table
 struct GSTNode *InstallRes(struct GSTNode *, int, char *);
-//function for changing type of a variable
-struct GSTNode *changeType(struct GSTNode *, int, char *);
-//function for changing size of a variable
-struct GSTNode *changeSize(struct GSTNode *, int, char *);
 //function for retrieving binding address of variable
 int getAddr(struct GSTNode *, char *);
 //for changing type of variable
@@ -80,7 +78,7 @@ struct AST_Node
 };
 
 //returns next available address
-int allocate();
+int allocate(int);
 //resets addr variable to zero
 void init_storage();
 //resets LABEL variable to 0
@@ -97,6 +95,8 @@ struct AST_Node *makeVariableLeafNode(int, int, char *, char *);
 struct AST_Node *makeConstantLeafNode(int, int, int, char *);
 //for creating constant string node
 struct AST_Node *makeConstantStringLeaf(int, int, char *);
+//create array variable node
+struct AST_Node *makeArrVariableNode(int, int, struct AST_Node *, struct AST_Node *, char *);
 //for creating break and continue statement node
 struct AST_Node *makeCBNode(int, int, char *);
 //for creating Statement node of category nodetype inlcludes assignment statement
@@ -136,6 +136,7 @@ void repeat_until_code_generator(FILE *, struct AST_Node *, int, int, struct GST
 void do_while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTNode *);
 void code_generator_util(FILE *, struct AST_Node *, int, int, struct GSTNode *);
 void code_generator(FILE *, struct AST_Node *, struct GSTNode *);
+reg_idx getArrayNodeAddress(FILE *, struct AST_Node *, struct GSTNode *);
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------------Evaluator Function-------------------------------------------------------

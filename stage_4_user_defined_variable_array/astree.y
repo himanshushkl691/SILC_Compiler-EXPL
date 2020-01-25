@@ -1,3 +1,4 @@
+//----------------------Auxiliary Declaration-----------------
 %{
     #include <stdio.h>
     #include <stdlib.h>
@@ -23,6 +24,7 @@
 %start program
 
 %%
+//---------------------------Rules----------------------------
 //-------------------------Declarations-----------------------
 Declarations:   _DECL DeclList _ENDDECL  {$$ = NULL;printGST(head);}
 |   _DECL _ENDDECL  {}
@@ -37,10 +39,21 @@ Decl:   _INT Varlist  ';' {
     $$ = ASTchangeType(head,$2,STRING);
 }
 ;
-Varlist:    _ID{head = InstallID(head,NONE,1,yytext);$$ = $1;}
-|   Varlist ',' _ID{
-    head = InstallID(head,NONE,1,yytext);
+Varlist:    Varlist ',' _ID {
+    head = InstallID(head,NONE,VARIABLE,1,$3->varname);
     $$ = makeStatementNode(STATEMENT,STATEMENT,$1,$3,",");
+}
+|   Varlist ',' _ID '[' _NUM ']'    {
+    head = InstallID(head,NONE,ARRAY_VARIABLE,$5->val,$3->varname);
+    $$ = makeStatementNode(STATEMENT,STATEMENT,$1,$3,",");
+}
+|   _ID {
+    head = InstallID(head,NONE,VARIABLE,1,$1->varname);
+    $$ = $1;
+}
+|   _ID '[' _NUM ']'    {
+    head = InstallID(head,NONE,ARRAY_VARIABLE,$3->val,$1->varname);
+    $$ = $1;
 }
 ;
 //----------------------------Program---------------------
@@ -98,12 +111,7 @@ stmt:	Inputstmt {
     $$ = $1;
 }
 ;
-Inputstmt:  _READ '(' _ID ')' ';'{
-    curr = LookUp(head,$3->varname);
-    if(!curr){
-        printf("Variable \"%s\" not declared\n",$3->varname);
-        exit(1);
-    }
+Inputstmt:  _READ '(' id ')' ';'{
     $$ = makeStatementNode(STATEMENT,READ,$3,(struct AST_Node *)NULL,"Read");
 }
 ;
@@ -127,7 +135,7 @@ stringExp:  expr    {$$ = $1;}
 |   _STRING {$$ = $1;}
 ;
 Ifstmt:	_IF '(' boolstmt ')' _THEN Slist _ELSE Slist _ENDIF ';'{
-      	struct AST_Node *temp1 = makeStatementNode(STATEMENT,IF,$3,$6,"IF");
+    struct AST_Node *temp1 = makeStatementNode(STATEMENT,IF,$3,$6,"IF");
 	struct AST_Node *temp2 = makeStatementNode(STATEMENT,ELSE,$8,(struct AST_Node *)NULL,"ELSE");
 	$$ = makeStatementNode(STATEMENT,IF_ELSE,temp1,temp2,"IF_ELSE");
 }
@@ -149,22 +157,58 @@ DoWhile:    _DO '{' Slist '}' _WHILE '(' boolstmt ')' ';'   {
 }
 ;
 boolstmt:	expr _LT expr{
-	$$ = makeStatementNode(BOOLEAN,LT,$1,$3,"LT");
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeStatementNode(BOOLEAN,LT,$1,$3,"LT");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
 }
 |	expr _LE expr{
-	$$ = makeStatementNode(BOOLEAN,LE,$1,$3,"LE");
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeStatementNode(BOOLEAN,LE,$1,$3,"LE");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
 }
 |	expr _GT expr{
-	$$ = makeStatementNode(BOOLEAN,GT,$1,$3,"GT");
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeStatementNode(BOOLEAN,GT,$1,$3,"GT");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
 }
 |	expr _GE expr{
-	$$ = makeStatementNode(BOOLEAN,GE,$1,$3,"GE");
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeStatementNode(BOOLEAN,GE,$1,$3,"GE");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
 }
 |	expr _NE expr{
-	$$ = makeStatementNode(BOOLEAN,NE,$1,$3,"NE");
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeStatementNode(BOOLEAN,NE,$1,$3,"NE");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
 }
 |	expr _EQ expr{
-	$$ = makeStatementNode(BOOLEAN,EQ,$1,$3,"EQ");
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeStatementNode(BOOLEAN,EQ,$1,$3,"EQ");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
 }
 ;
 //--------------------------Expressions-----------------------
@@ -208,16 +252,9 @@ expr:   expr _PLUS  expr    {
     $$ = $2;
 }
 |   _NUM    {$$ = $1;}
-|   _ID     {
-    $$ = $1;
-    curr = LookUp(head,$$->varname);
-    if(!curr){
-        printf("Variable \"%s\" not declared\n",$$->varname);
-        exit(1);
-    }
-    $$->type = curr->type;
-}
+|   id  {$$ = $1;}
 ;
+//----------------------------Identifiers-----------------------
 id: _ID {
     $$ = $1;
     curr = LookUp(head,$$->varname);
@@ -227,8 +264,22 @@ id: _ID {
     }
     $$->type = curr->type;
 }
+|   _ID '[' expr ']' {
+    curr = LookUp(head,$1->varname);
+    if(!curr){
+        printf("Variable \"%s\" not declared\n",$1->varname);
+        exit(1);
+    }
+    if(curr->type_of_var != ARRAY_VARIABLE){
+        printf("Variable \"%s\" not of array type\n",$1->varname);
+        exit(1);
+    }
+    $1->type = curr->type;
+    $$ = makeArrVariableNode(ARRAY_VARIABLE,$1->type,$1,$3,"ARRAY_VARIABLE");
+}
 ;
 %%
+//-------------------------Auxiliary Functions--------------------------
 void yyerror(const char *err){
     printf("yyerror error: %s\n",err);
     return;

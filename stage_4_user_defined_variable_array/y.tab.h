@@ -122,7 +122,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 15 "astree.y" /* yacc.c:1909  */
+#line 16 "astree.y" /* yacc.c:1909  */
 
     struct AST_Node *node;
 

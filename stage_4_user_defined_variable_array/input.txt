@@ -1,9 +1,17 @@
 decl
-	int num;
-	int sum;
+	str arr[50];
+	int i,n;
 enddecl
 begin
-	read(num);
-	num = -1 * num + num;
-	write(num);
+	read(n);
+	i = 0;
+	while(i < n) do
+		read(arr[i]);
+		i = i + 1;
+	endwhile;
+	i = 0;
+	while(i < n) do
+		write(arr[i]);
+		i = i + 1;
+	endwhile;
 end

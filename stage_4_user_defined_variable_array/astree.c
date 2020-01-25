@@ -1,8 +1,8 @@
 //-------------------------Static Storage Allocation----------------------------------
-int allocate()
+int allocate(int size)
 {
 	int a = ADDR;
-	ADDR++;
+	ADDR += size;
 	return a;
 }
 
@@ -31,19 +31,21 @@ void printGST(struct GSTNode *root)
 	struct GSTNode *curr = root;
 	while (curr)
 	{
-		printf("%s		%d		%d		%d\n", curr->varname, curr->type, curr->size, curr->binding_addr);
+		if (curr->type != RESERVED)
+			printf("%s		%d		%d		%d		%d\n", curr->varname, curr->type, curr->type_of_var, curr->size, curr->binding_addr);
 		curr = curr->next;
 	}
 }
 
-struct GSTNode *init_node(int type, int size, char *s)
+struct GSTNode *init_node(int type, int type_of_var, int size, char *s)
 {
 	struct GSTNode *newn = (struct GSTNode *)malloc(sizeof(struct GSTNode));
 	newn->varname = (char *)malloc(strlen(s) * sizeof(char));
 	newn->varname = strdup(s);
 	newn->type = type;
+	newn->type_of_var = type_of_var;
 	newn->size = size;
-	newn->binding_addr = allocate();
+	newn->binding_addr = allocate(size);
 	newn->next = NULL;
 	return newn;
 }
@@ -61,7 +63,7 @@ struct GSTNode *LookUp(struct GSTNode *root, char *s)
 	return NULL;
 }
 
-struct GSTNode *InstallID(struct GSTNode *root, int type, int size, char *s)
+struct GSTNode *InstallID(struct GSTNode *root, int type, int type_of_var, int size, char *s)
 {
 	struct GSTNode *curr = LookUp(root, s);
 	if (curr && curr->type == RESERVED)
@@ -86,10 +88,10 @@ struct GSTNode *InstallID(struct GSTNode *root, int type, int size, char *s)
 		}
 		if (prev)
 		{
-			prev->next = init_node(type, size, s);
+			prev->next = init_node(type, type_of_var, size, s);
 		}
 		else
-			root = init_node(type, size, s);
+			root = init_node(type, type_of_var, size, s);
 		if (LookUp(root, s))
 			return root;
 		else
@@ -115,9 +117,9 @@ struct GSTNode *InstallRes(struct GSTNode *root, int type, char *s)
 			curr = curr->next;
 		}
 		if (prev)
-			prev->next = init_node(type, 1, s);
+			prev->next = init_node(type, RESERVED, 1, s);
 		else
-			root = init_node(type, 1, s);
+			root = init_node(type, RESERVED, 1, s);
 		if (LookUp(root, s))
 			return root;
 		else
@@ -167,6 +169,20 @@ struct AST_Node *makeVariableLeafNode(int nodetype, int type, char *varname, cha
 	newn->varname = strdup(varname);
 	newn->left = newn->right = NULL;
 	newn->oper = NULL;
+	return newn;
+}
+
+struct AST_Node *makeArrVariableNode(int nodetype, int type, struct AST_Node *l, struct AST_Node *r, char *s)
+{
+	struct AST_Node *newn;
+	newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	newn->nodetype = nodetype;
+	newn->type = type;
+	newn->s = (char *)malloc(strlen(s) * sizeof(char));
+	newn->s = strdup(s);
+	newn->varname = newn->oper = NULL;
+	newn->left = l;
+	newn->right = r;
 	return newn;
 }
 
@@ -346,6 +362,14 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTNod
 		fprintf(ft, "MOV R%d, [%d]\n", id, aRes);
 		return id;
 	}
+	if (root->nodetype == ARRAY_VARIABLE)
+	{
+		reg_idx id = getReg();
+		reg_idx aRes = getArrayNodeAddress(ft, root, head);
+		fprintf(ft, "MOV R%d, [R%d]\n", id, aRes);
+		aRes = freeReg();
+		return id;
+	}
 	else
 	{
 		reg_idx a = expression_code_generator(ft, root->left, head);
@@ -377,13 +401,36 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTNod
 	}
 }
 
+reg_idx getArrayNodeAddress(FILE *ft, struct AST_Node *root, struct GSTNode *head)
+{
+	struct GSTNode *curr = LookUp(head, root->left->varname);
+	if (!curr)
+		exit(1);
+	reg_idx temp0 = getReg();
+	fprintf(ft, "MOV R%d, %d\n", temp0, curr->binding_addr);
+	reg_idx temp1 = expression_code_generator(ft, root->right, head);
+	fprintf(ft, "ADD R%d, R%d\n", temp0, temp1);
+	temp1 = freeReg();
+	return temp0;
+}
+
 int assignment_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 {
 	if (root && root->left && root->right)
 	{
 		reg_idx id = expression_code_generator(ft, root->right, head);
-		int aRes = getAddr(head, root->left->varname);
-		fprintf(ft, "MOV [%d], R%d\n", aRes, id);
+		int aRes = -1;
+		if (root->left->nodetype == VARIABLE)
+		{
+			aRes = getAddr(head, root->left->varname);
+			fprintf(ft, "MOV [%d], R%d\n", aRes, id);
+		}
+		else if (root->left->nodetype == ARRAY_VARIABLE)
+		{
+			aRes = getArrayNodeAddress(ft, root->left, head);
+			fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
+			aRes = freeReg();
+		}
 		id = freeReg();
 		return 1;
 	}
@@ -423,10 +470,20 @@ int read_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 {
 	if (root && root->left)
 	{
-		int aRes = getAddr(head, root->left->varname);
+		int aRes = -1;
 		reg_idx id = getReg();
+		if (root->left->nodetype == VARIABLE)
+		{
+			aRes = getAddr(head, root->left->varname);
+			fprintf(ft, "MOV R%d, %d\n", id, aRes);
+		}
+		else if (root->left->nodetype == ARRAY_VARIABLE)
+		{
+			aRes = getArrayNodeAddress(ft, root->left, head);
+			fprintf(ft, "MOV R%d, R%d\n", id, aRes);
+			aRes = freeReg();
+		}
 		reg_idx temp = getReg();
-		fprintf(ft, "MOV R%d, %d\n", id, aRes);
 		fprintf(ft, "MOV R%d, \"Read\"\n", temp);
 		fprintf(ft, "PUSH R%d\n", temp);
 		fprintf(ft, "MOV R%d, -1\n", temp);

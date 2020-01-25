@@ -46,6 +46,8 @@ breakpoint  {yylval.node = makeCBNode(BREAKPOINT,BREAKPOINT,yytext);return _BREA
 ")" 		{return *yytext;}
 "{"         {return *yytext;}
 "}"         {return *yytext;}
+"["         {return *yytext;}
+"]"         {return *yytext;}
 "+" 		{return _PLUS;}
 "-" 		{return _MINUS;}
 "*" 		{return _MUL;}
