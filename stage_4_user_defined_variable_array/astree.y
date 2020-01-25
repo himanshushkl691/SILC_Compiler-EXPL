@@ -8,6 +8,8 @@
     char *yytext;
     FILE *ft;
     struct GSTNode *head, *curr;
+    char *keyword[20] = {"begin", "end", "read", "write", "if", "else", "then", "endif", "while", "do", "endwhile", "repeat", "until", "int", "str", "decl", "enddecl", "break", "continue", "breakpoint"};
+
 %}
 
 %union{
@@ -22,7 +24,7 @@
 
 %%
 //-------------------------Declarations-----------------------
-Declarations:   _DECL DeclList _ENDDECL  {printGST(head);}
+Declarations:   _DECL DeclList _ENDDECL  {$$ = NULL;printGST(head);}
 |   _DECL _ENDDECL  {}
 ;
 DeclList:   DeclList Decl   {}
@@ -47,7 +49,7 @@ program:    Declarations _BEGIN Slist _END {
     printf("Parsing completed\n");
     print_tree($3);
     printf("\n");
-    //code_generator(ft,$3);
+    code_generator(ft,$3,head);
     exit(1);
 }
 |   Declarations _BEGIN  _END   {
@@ -97,7 +99,12 @@ stmt:	Inputstmt {
 }
 ;
 Inputstmt:  _READ '(' _ID ')' ';'{
-    	$$ = makeStatementNode(STATEMENT,READ,$3,(struct AST_Node *)NULL,"Read");
+    curr = LookUp(head,$3->varname);
+    if(!curr){
+        printf("Variable \"%s\" not declared\n",$3->varname);
+        exit(1);
+    }
+    $$ = makeStatementNode(STATEMENT,READ,$3,(struct AST_Node *)NULL,"Read");
 }
 ;
 Outputstmt: _WRITE '(' stringExp ')' ';' {
@@ -106,11 +113,11 @@ Outputstmt: _WRITE '(' stringExp ')' ';' {
 Assgstmt:   id '=' stringExp ';'{
     int t1 = $1->type ,t2 = $3->type;
     if(t1 == STRING && (t2 == PLUS || t2 == MINUS || t2 == MUL || t2 == DIV || t2 == INTEGER)){
-        printf("Variable %s is a string variable assigning expression\n",$1->varname);
+        printf("Variable \"%s\" is a string variable assigning expression\n",$1->varname);
         exit(1);
     }
     if(t1 == INTEGER && t2 == STRING){
-        printf("Variable %s is an integer variable assigning string value\n",$1->varname);
+        printf("Variable \"%s\" is an integer variable assigning string value\n",$1->varname);
         exit(1);
     }
 	$$ = makeExpressionNode(EXPRESSION,ASSIGNMENT,'=',$1,$3,"=");
@@ -162,16 +169,40 @@ boolstmt:	expr _LT expr{
 ;
 //--------------------------Expressions-----------------------
 expr:   expr _PLUS  expr    {
-    $$ = makeExpressionNode(EXPRESSION,PLUS,'+',$1,$3,"+");
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeExpressionNode(EXPRESSION,PLUS,'+',$1,$3,"+");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
 }
 |   expr _MINUS expr     {
-    $$ = makeExpressionNode(EXPRESSION,MINUS,'-',$1,$3,"-");
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeExpressionNode(EXPRESSION,MINUS,'-',$1,$3,"-");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
 }
 |   expr _MUL expr   {
-    $$ = makeExpressionNode(EXPRESSION,MUL,'*',$1,$3,"*");
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeExpressionNode(EXPRESSION,MUL,'*',$1,$3,"*");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
 }
 |   expr _DIV expr   {
-    $$ = makeExpressionNode(EXPRESSION,DIV,'/',$1,$3,"/");
+    int t1 = $1->type,t2 = $3->type;
+    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL) && (t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+        $$ = makeExpressionNode(EXPRESSION,DIV,'/',$1,$3,"/");
+    else{
+        printf("Invalid operand\n");
+        exit(1);
+    }
 }
 |   '(' expr ')'    {
     $$ = $2;
@@ -181,21 +212,17 @@ expr:   expr _PLUS  expr    {
     $$ = $1;
     curr = LookUp(head,$$->varname);
     if(!curr){
-        printf("Variable %s not declared\n",$$->varname);
+        printf("Variable \"%s\" not declared\n",$$->varname);
         exit(1);
     }
     $$->type = curr->type;
-    if($$->type != INTEGER){
-        printf("Arithmetic operation on non-integer variable %s\n",$$->varname);
-        exit(1);
-    }
 }
 ;
 id: _ID {
     $$ = $1;
     curr = LookUp(head,$$->varname);
     if(!curr){
-        printf("Variable %s not declared\n",$$->varname);
+        printf("Variable \"%s\" not declared\n",$$->varname);
         exit(1);
     }
     $$->type = curr->type;
@@ -208,8 +235,7 @@ void yyerror(const char *err){
 }
 
 int main(int argc,char *argv[]){
-    LABEL = 0;
-    ADDR = 4096;
+    head = init_ds(head,keyword);    
     if(argc > 1){
 		printf("Generating file as %s\n",argv[1]);
 		ft = fopen(argv[1],"w");

@@ -1,4 +1,4 @@
-//--------------------------------------Static Storage Allocation---------------------------------------
+//-------------------------Static Storage Allocation----------------------------------
 int allocate()
 {
 	int a = ADDR;
@@ -23,7 +23,7 @@ int getLabel()
 	LABEL++;
 	return a;
 }
-//-------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
 
 //-----------------------------Global Symbol Table-----------------------------------
 void printGST(struct GSTNode *root)
@@ -31,7 +31,7 @@ void printGST(struct GSTNode *root)
 	struct GSTNode *curr = root;
 	while (curr)
 	{
-		printf("%s		%d			%d			%d\n", curr->varname, curr->type, curr->size, curr->binding_addr);
+		printf("%s		%d		%d		%d\n", curr->varname, curr->type, curr->size, curr->binding_addr);
 		curr = curr->next;
 	}
 }
@@ -63,7 +63,13 @@ struct GSTNode *LookUp(struct GSTNode *root, char *s)
 
 struct GSTNode *InstallID(struct GSTNode *root, int type, int size, char *s)
 {
-	if (LookUp(root, s))
+	struct GSTNode *curr = LookUp(root, s);
+	if (curr && curr->type == RESERVED)
+	{
+		printf("\"%s\" is a reserved keyword cannot be an identifier\n", s);
+		exit(1);
+	}
+	else if (curr)
 	{
 		printf("Variable \"%s\" redeclared\n", s);
 		exit(1);
@@ -84,6 +90,34 @@ struct GSTNode *InstallID(struct GSTNode *root, int type, int size, char *s)
 		}
 		else
 			root = init_node(type, size, s);
+		if (LookUp(root, s))
+			return root;
+		else
+		{
+			printf("Installation error\n");
+			exit(1);
+		}
+	}
+}
+
+struct GSTNode *InstallRes(struct GSTNode *root, int type, char *s)
+{
+	if (LookUp(root, s))
+		return root;
+	else
+	{
+		struct GSTNode *curr, *prev;
+		curr = root;
+		prev = NULL;
+		while (curr)
+		{
+			prev = curr;
+			curr = curr->next;
+		}
+		if (prev)
+			prev->next = init_node(type, 1, s);
+		else
+			root = init_node(type, 1, s);
 		if (LookUp(root, s))
 			return root;
 		else
@@ -242,7 +276,7 @@ struct AST_Node *ASTchangeType(struct GSTNode *head, struct AST_Node *root, int 
 	return root;
 }
 //----------------------------------------------------------------------------------------------------------
-/*
+
 //-----------------------------Register Allocation Functions-------------------------
 void init_reg_pool()
 {
@@ -284,7 +318,7 @@ reg_idx freeReg()
 //-----------------------------------------------------------------------------------
 
 //-------------------------------Code Generation-------------------------------------
-reg_idx expression_code_generator(FILE *ft, struct AST_Node *root)
+reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 {
 	if (root->nodetype == CONSTANT && root->type == INTEGER && root->oper == NULL)
 	{
@@ -294,15 +328,28 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root)
 	}
 	if (root->nodetype == VARIABLE && root->type == INTEGER && root->varname != NULL)
 	{
-		int aRes = address[*(root->varname) - 'a'];
+		int aRes = getAddr(head, root->varname);
+		reg_idx id = getReg();
+		fprintf(ft, "MOV R%d, [%d]\n", id, aRes);
+		return id;
+	}
+	if (root->nodetype == CONSTANT && root->type == STRING && root->oper == NULL)
+	{
+		reg_idx id = getReg();
+		fprintf(ft, "MOV R%d, %s\n", id, root->s);
+		return id;
+	}
+	if (root->nodetype == VARIABLE && root->type == STRING && root->varname != NULL)
+	{
+		int aRes = getAddr(head, root->varname);
 		reg_idx id = getReg();
 		fprintf(ft, "MOV R%d, [%d]\n", id, aRes);
 		return id;
 	}
 	else
 	{
-		reg_idx a = expression_code_generator(ft, root->left);
-		reg_idx b = expression_code_generator(ft, root->right);
+		reg_idx a = expression_code_generator(ft, root->left, head);
+		reg_idx b = expression_code_generator(ft, root->right, head);
 		reg_idx id;
 		switch (*(root->oper))
 		{
@@ -330,12 +377,12 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root)
 	}
 }
 
-int assignment_code_generator(FILE *ft, struct AST_Node *root)
+int assignment_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 {
 	if (root && root->left && root->right)
 	{
-		reg_idx id = expression_code_generator(ft, root->right);
-		int aRes = address[*(root->left->varname) - 'a'];
+		reg_idx id = expression_code_generator(ft, root->right, head);
+		int aRes = getAddr(head, root->left->varname);
 		fprintf(ft, "MOV [%d], R%d\n", aRes, id);
 		id = freeReg();
 		return 1;
@@ -345,11 +392,11 @@ int assignment_code_generator(FILE *ft, struct AST_Node *root)
 	return -1;
 }
 
-int write_code_generator(FILE *ft, struct AST_Node *root)
+int write_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 {
 	if (root && root->left)
 	{
-		reg_idx id = expression_code_generator(ft, root->left);
+		reg_idx id = expression_code_generator(ft, root->left, head);
 		reg_idx temp = getReg();
 		fprintf(ft, "MOV R%d, \"Write\"\n", temp);
 		fprintf(ft, "PUSH R%d\n", temp);
@@ -372,11 +419,11 @@ int write_code_generator(FILE *ft, struct AST_Node *root)
 	return -1;
 }
 
-int read_code_generator(FILE *ft, struct AST_Node *root)
+int read_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 {
 	if (root && root->left)
 	{
-		int aRes = address[*(root->left->varname) - 'a'];
+		int aRes = getAddr(head, root->left->varname);
 		reg_idx id = getReg();
 		reg_idx temp = getReg();
 		fprintf(ft, "MOV R%d, %d\n", id, aRes);
@@ -399,12 +446,12 @@ int read_code_generator(FILE *ft, struct AST_Node *root)
 	return 1;
 }
 
-void boolean_code_generator(FILE *ft, struct AST_Node *root, int label)
+void boolean_code_generator(FILE *ft, struct AST_Node *root, int label, struct GSTNode *head)
 {
 	if (root && root->left && root->right)
 	{
-		reg_idx a = expression_code_generator(ft, root->left);
-		reg_idx b = expression_code_generator(ft, root->right);
+		reg_idx a = expression_code_generator(ft, root->left, head);
+		reg_idx b = expression_code_generator(ft, root->right, head);
 		switch (root->type)
 		{
 		case LT:
@@ -435,7 +482,7 @@ void boolean_code_generator(FILE *ft, struct AST_Node *root, int label)
 	exit(1);
 }
 
-void if_else_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+void if_else_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTNode *head)
 {
 	if (root)
 	{
@@ -444,13 +491,13 @@ void if_else_code_generator(FILE *ft, struct AST_Node *root, int blabel, int cla
 			int first_label = getLabel();
 			int second_label = getLabel();
 			if (root->left->left)
-				boolean_code_generator(ft, root->left->left, first_label);
+				boolean_code_generator(ft, root->left->left, first_label, head);
 			if (root->left->right)
-				code_generator_util(ft, root->left->right, blabel, clabel);
+				code_generator_util(ft, root->left->right, blabel, clabel, head);
 			fprintf(ft, "JMP _L%d\n", second_label);
 			fprintf(ft, "_L%d:\n", first_label);
 			if (root->right)
-				code_generator_util(ft, root->right, blabel, clabel);
+				code_generator_util(ft, root->right, blabel, clabel, head);
 			fprintf(ft, "_L%d:\n", second_label);
 		}
 		return;
@@ -459,7 +506,7 @@ void if_else_code_generator(FILE *ft, struct AST_Node *root, int blabel, int cla
 	return;
 }
 
-void while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+void while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTNode *head)
 {
 	if (root)
 	{
@@ -468,9 +515,9 @@ void while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabe
 			int first_label = getLabel();
 			int second_label = getLabel();
 			fprintf(ft, "_L%d:\n", first_label);
-			boolean_code_generator(ft, root->left, second_label);
+			boolean_code_generator(ft, root->left, second_label, head);
 			if (root->right)
-				code_generator_util(ft, root->right, second_label, first_label);
+				code_generator_util(ft, root->right, second_label, first_label, head);
 			fprintf(ft, "JMP _L%d\n", first_label);
 			fprintf(ft, "_L%d:\n", second_label);
 		}
@@ -480,7 +527,7 @@ void while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabe
 	return;
 }
 
-void do_while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+void do_while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTNode *head)
 {
 	if (root)
 	{
@@ -490,8 +537,8 @@ void do_while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int cl
 			int second_label = getLabel();
 			fprintf(ft, "_L%d:\n", first_label);
 			if (root->left)
-				code_generator_util(ft, root->left, second_label, first_label);
-			boolean_code_generator(ft, root->right, second_label);
+				code_generator_util(ft, root->left, second_label, first_label, head);
+			boolean_code_generator(ft, root->right, second_label, head);
 			fprintf(ft, "JMP _L%d\n", first_label);
 			fprintf(ft, "_L%d:\n", second_label);
 		}
@@ -501,7 +548,7 @@ void do_while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int cl
 	return;
 }
 
-void repeat_until_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+void repeat_until_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTNode *head)
 {
 	if (root)
 	{
@@ -511,8 +558,8 @@ void repeat_until_code_generator(FILE *ft, struct AST_Node *root, int blabel, in
 			int second_label = getLabel();
 			fprintf(ft, "_L%d:\n", first_label);
 			if (root->left)
-				code_generator_util(ft, root->left, second_label, first_label);
-			boolean_code_generator(ft, root->right, first_label);
+				code_generator_util(ft, root->left, second_label, first_label, head);
+			boolean_code_generator(ft, root->right, first_label, head);
 			fprintf(ft, "_L%d:\n", second_label);
 		}
 		return;
@@ -543,43 +590,43 @@ void breakpoint_code_generator(FILE *ft, struct AST_Node *root)
 	return;
 }
 
-void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTNode *head)
 {
 	if (root)
 	{
 		if (root->nodetype == EXPRESSION && root->type == ASSIGNMENT)
 		{
-			assignment_code_generator(ft, root);
+			assignment_code_generator(ft, root, head);
 			return;
 		}
 		if (root->nodetype == STATEMENT && root->type == READ)
 		{
-			read_code_generator(ft, root);
+			read_code_generator(ft, root, head);
 			return;
 		}
 		if (root->nodetype == STATEMENT && root->type == WRITE)
 		{
-			write_code_generator(ft, root);
+			write_code_generator(ft, root, head);
 			return;
 		}
 		if (root->nodetype == STATEMENT && root->type == IF_ELSE)
 		{
-			if_else_code_generator(ft, root, blabel, clabel);
+			if_else_code_generator(ft, root, blabel, clabel, head);
 			return;
 		}
 		if (root->nodetype == LOOP && root->type == WHILE)
 		{
-			while_code_generator(ft, root, blabel, clabel);
+			while_code_generator(ft, root, blabel, clabel, head);
 			return;
 		}
 		if (root->nodetype == LOOP && root->type == DO_WHILE)
 		{
-			do_while_code_generator(ft, root, blabel, clabel);
+			do_while_code_generator(ft, root, blabel, clabel, head);
 			return;
 		}
 		if (root->nodetype == LOOP && root->type == REPEAT_UNTIL)
 		{
-			repeat_until_code_generator(ft, root, blabel, clabel);
+			repeat_until_code_generator(ft, root, blabel, clabel, head);
 			return;
 		}
 		if (root->nodetype == BREAK)
@@ -597,20 +644,17 @@ void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel
 			breakpoint_code_generator(ft, root);
 			return;
 		}
-		code_generator_util(ft, root->left, blabel, clabel);
-		code_generator_util(ft, root->right, blabel, clabel);
+		code_generator_util(ft, root->left, blabel, clabel, head);
+		code_generator_util(ft, root->right, blabel, clabel, head);
 	}
 	return;
 }
 
-void code_generator(FILE *ft, struct AST_Node *root)
+void code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 {
-	init_reg_pool();
-	init_Label();
-	int temp = allocate();
 	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
-	fprintf(ft, "MOV SP, %d\n", temp);
-	code_generator_util(ft, root, -1, -1);
+	fprintf(ft, "MOV SP, %d\n", ADDR - 1);
+	code_generator_util(ft, root, -1, -1, head);
 	reg_idx temp = getReg();
 	fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
 	fprintf(ft, "PUSH R%d\n", temp);
@@ -621,4 +665,15 @@ void code_generator(FILE *ft, struct AST_Node *root)
 	fprintf(ft, "CALL 0\n");
 	fclose(ft);
 }
-//-----------------------------------------------------------------------------------*/
+//-----------------------------------------------------------------------------------
+
+//initialize global variables and data structures
+struct GSTNode *init_ds(struct GSTNode *head, char **keyword)
+{
+	init_storage();
+	init_reg_pool();
+	init_Label();
+	for (int i = 0; i < 20; i++)
+		head = InstallRes(head, RESERVED, keyword[i]);
+	return head;
+}

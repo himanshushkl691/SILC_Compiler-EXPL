@@ -32,6 +32,10 @@
 #define DO_WHILE 31
 #define STRING 32
 #define NONE 33
+#define RESERVED 34
+
+int ADDR;
+int LABEL;
 
 //-----------------------------------------Global Symbol Table----------------------------------------------
 struct GSTNode
@@ -47,8 +51,10 @@ struct GSTNode
 struct GSTNode *init_node(int, int, char *);
 //checks whether id is already present in symbol table if it is returns pointer to it o/w NULL
 struct GSTNode *LookUp(struct GSTNode *, char *);
-//returns (1/0) whether id is installed or not in symbol table;
+//installs identifier in symbol table
 struct GSTNode *InstallID(struct GSTNode *, int, int, char *);
+//install reserved keywords in symbol table
+struct GSTNode *InstallRes(struct GSTNode *, int, char *);
 //function for changing type of a variable
 struct GSTNode *changeType(struct GSTNode *, int, char *);
 //function for changing size of a variable
@@ -73,9 +79,6 @@ struct AST_Node
 	struct AST_Node *left, *right;
 };
 
-int ADDR;
-int LABEL;
-
 //returns next available address
 int allocate();
 //resets addr variable to zero
@@ -84,6 +87,9 @@ void init_storage();
 void init_Label();
 //returns next available LABEL
 int getLabel();
+//initialize global variables and data structures
+struct GSTNode *init_ds(struct GSTNode *, char **);
+
 //function declaration for Abstract Syntax Tree
 //for creating variable node
 struct AST_Node *makeVariableLeafNode(int, int, char *, char *);
@@ -116,20 +122,20 @@ reg_idx freeReg();
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------Code Generation Function-------------------------------------------------------
-reg_idx expression_code_generator(FILE *, struct AST_Node *);
-int assignment_code_generator(FILE *, struct AST_Node *);
-int read_code_generator(FILE *, struct AST_Node *);
-int write_code_generator(FILE *, struct AST_Node *);
-void boolean_code_generator(FILE *, struct AST_Node *, int);
-void if_else_code_generator(FILE *, struct AST_Node *, int, int);
-void while_code_generator(FILE *, struct AST_Node *, int, int);
+reg_idx expression_code_generator(FILE *, struct AST_Node *, struct GSTNode *);
+int assignment_code_generator(FILE *, struct AST_Node *, struct GSTNode *);
+int read_code_generator(FILE *, struct AST_Node *, struct GSTNode *);
+int write_code_generator(FILE *, struct AST_Node *, struct GSTNode *);
+void boolean_code_generator(FILE *, struct AST_Node *, int, struct GSTNode *);
+void if_else_code_generator(FILE *, struct AST_Node *, int, int, struct GSTNode *);
+void while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTNode *);
 void break_code_generator(FILE *, struct AST_Node *, int, int);
 void continue_code_generator(FILE *, struct AST_Node *, int, int);
 void breakpoint_code_generator(FILE *, struct AST_Node *);
-void repeat_until_code_generator(FILE *, struct AST_Node *, int, int);
-void do_while_code_generator(FILE *, struct AST_Node *, int, int);
-void code_generator_util(FILE *, struct AST_Node *, int, int);
-void code_generator(FILE *, struct AST_Node *);
+void repeat_until_code_generator(FILE *, struct AST_Node *, int, int, struct GSTNode *);
+void do_while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTNode *);
+void code_generator_util(FILE *, struct AST_Node *, int, int, struct GSTNode *);
+void code_generator(FILE *, struct AST_Node *, struct GSTNode *);
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------------Evaluator Function-------------------------------------------------------

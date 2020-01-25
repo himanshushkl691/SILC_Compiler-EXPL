@@ -1,7 +1,9 @@
 decl
-	int num1,num2,num3;
-	str str1,str2,str3;
+	int num;
+	int sum;
 enddecl
 begin
-	write("hello");
+	read(num);
+	num = -1 * num + num;
+	write(num);
 end
