@@ -2120,12 +2120,13 @@ yyreturn:
 
 //-------------------------Auxiliary Functions--------------------------
 void yyerror(const char *err){
-    printf("yyerror error: %s\n",err);
+    printf("**%s at line number %d\n",err,line);
     return;
 }
 
 int main(int argc,char *argv[]){
-    head = init_ds(head,keyword);    
+    head = init_ds(head,keyword);
+    line = 1;
     if(argc > 1){
 		printf("Generating file as %s\n",argv[1]);
 		ft = fopen(argv[1],"w");

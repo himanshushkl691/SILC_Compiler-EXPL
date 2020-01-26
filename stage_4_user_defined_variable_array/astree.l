@@ -58,8 +58,8 @@ breakpoint  {yylval.node = makeCBNode(BREAKPOINT,BREAKPOINT,yytext);return _BREA
 ([=][=])	{return _EQ;}
 ([!][=])	{return _NE;}
 [ \t]   {}
-[\n]    {}
-.   {yyerror("Unknown character\n");exit(1);}
+[\n]    {line++;}
+.   {printf("Unknown character at line number %d\n",line);exit(1);}
 %%
 int yywrap(){
     return 1;

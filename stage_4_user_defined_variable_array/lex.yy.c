@@ -1040,12 +1040,12 @@ case 45:
 /* rule 45 can match eol */
 YY_RULE_SETUP
 #line 61 "astree.l"
-{}
+{line++;}
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
 #line 62 "astree.l"
-{yyerror("Unknown character\n");exit(1);}
+{printf("Unknown character at line number %d\n",line);exit(1);}
 	YY_BREAK
 case 47:
 YY_RULE_SETUP

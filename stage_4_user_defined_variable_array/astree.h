@@ -38,6 +38,7 @@
 
 int ADDR;
 int LABEL;
+int line;
 
 //-----------------------------------------Global Symbol Table----------------------------------------------
 struct GSTNode
