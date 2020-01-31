@@ -112,6 +112,11 @@ struct AST_Node *ASTchangeType(struct GSTNode *, struct AST_Node *, int);
 void print_tree(struct AST_Node *);
 //----------------------------------------------------------------------------------------------------------
 
+//-----------------------------------Auxiliary Function----------------------------------------
+int typeCheck(struct AST_Node *,struct AST_Node *);
+int typeCheckBool(struct AST_Node *l);
+//---------------------------------------------------------------------------------------------
+
 //-----------------------------------------Register Allocation Strategy---------------------------------------------------
 #define reg_idx int
 int reg_pool[20];

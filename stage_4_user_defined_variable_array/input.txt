@@ -1,7 +1,8 @@
 decl
-	int ar;
+	int a,b,x,y;
 enddecl
 begin
-	if(ar < 4) then
+	if((a + b) < (x + y)) then
+		write(a);
 	endif;
 end

@@ -333,6 +333,24 @@ reg_idx freeReg()
 }
 //-----------------------------------------------------------------------------------
 
+//-------------------------------Auxiliary Functions---------------------------------
+int typeCheck(struct AST_Node *l, struct AST_Node *r)
+{
+	int t1 = l->type, t2 = r->type;
+	if ((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+		return 1;
+	return 0;
+}
+
+int typeCheckBool(struct AST_Node *l)
+{
+	int t1 = l->type;
+	if (t1 == LE || t1 == LT || t1 == GE || t1 == GT || t1 == EQ || t1 == NE)
+		return 1;
+	return 0;
+}
+//-----------------------------------------------------------------------------------
+
 //-------------------------------Code Generation-------------------------------------
 reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 {

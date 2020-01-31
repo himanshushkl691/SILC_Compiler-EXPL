@@ -17,10 +17,43 @@
     struct AST_Node *node;
 };
 
-%type <node> program Slist stmt Inputstmt Outputstmt Assgstmt Ifstmt id expr _FINISHED _NUM _STRING _END boolstmt Whilestmt _BREAK _CONTINUE _BREAKPOINT RepeatUntil DoWhile DeclList Decl Declarations Varlist _ID stringExp
-%token _PLUS _MINUS _MUL _DIV _MOD _NUM _BEGIN _END _READ _WRITE _FINISHED _LT _LE _GT _GE _NE _EQ _IF _THEN _ELSE _ENDIF _WHILE _DO _ENDWHILE _BREAK _CONTINUE _BREAKPOINT _REPEAT _UNTIL _INT _STR _DECL _ENDDECL _ID _STRING
+/**/
+%type <node> _BREAK _CONTINUE _BREAKPOINT
+%type <node> DeclList Decl Declarations Varlist
+%type <node> program
+%type <node> Slist stmt Inputstmt Outputstmt Assgstmt Ifstmt Whilestmt RepeatUntil DoWhile
+%type <node> _NUM _STRING
+%type <node> expr stringExp _ID id _END
+/*TOKENS*/
+//declaration
+%token _DECL _ENDDECL
+//operator
+%token _PLUS _MINUS _MUL _DIV _MOD
+//constants and identifiers
+%token _NUM _STRING _ID
+//relop
+%token _LT _LE _GT _GE _NE _EQ
+//data type
+%token _INT _STR
+//read and write
+%token _READ _WRITE
+//begin and end of function
+%token _BEGIN _END
+//if-else
+%token _IF _THEN _ELSE _ENDIF
+//while and do-while
+%token _WHILE _DO _ENDWHILE
+//repeat-until
+%token _REPEAT _UNTIL
+//break, continue, breakpoint
+%token _BREAK _CONTINUE _BREAKPOINT
+/*ASSOCIATIVITY*/
+%left _LT _LE
+%left _GT _GE
+%left _EQ _NE
 %left _PLUS _MINUS
 %left _MUL _DIV _MOD
+/*STARTING Non-Terminal*/
 %start program
 
 %%
@@ -120,7 +153,7 @@ Outputstmt: _WRITE '(' stringExp ')' ';' {
 };
 Assgstmt:   id '=' stringExp ';'{
     int t1 = $1->type ,t2 = $3->type;
-    if(t1 == STRING && (t2 == PLUS || t2 == MINUS || t2 == MUL || t2 == DIV || t2 == INTEGER)){
+    if(t1 == STRING && (t2 == PLUS || t2 == MINUS || t2 == MUL || t2 == DIV || t2 == INTEGER || typeCheckBool($3))){
         printf("Variable \"%s\" is a string variable assigning expression\n",$1->varname);
         exit(1);
     }
@@ -134,87 +167,54 @@ Assgstmt:   id '=' stringExp ';'{
 stringExp:  expr    {$$ = $1;}
 |   _STRING {$$ = $1;}
 ;
-Ifstmt:	_IF '(' boolstmt ')' _THEN Slist _ELSE Slist _ENDIF ';'{
+Ifstmt:	_IF '(' expr ')' _THEN Slist _ELSE Slist _ENDIF ';'{
+    if(!typeCheckBool($3)){
+        printf("Invalid boolean statement\n");
+        exit(1);
+    }
     struct AST_Node *temp1 = makeStatementNode(STATEMENT,IF,$3,$6,"IF");
 	struct AST_Node *temp2 = makeStatementNode(STATEMENT,ELSE,$8,(struct AST_Node *)NULL,"ELSE");
 	$$ = makeStatementNode(STATEMENT,IF_ELSE,temp1,temp2,"IF_ELSE");
 }
-|	_IF '(' boolstmt ')' _THEN Slist _ENDIF ';'{
+|	_IF '(' expr ')' _THEN Slist _ENDIF ';'{
+    if(!typeCheckBool($3)){
+        printf("Invalid boolean statement\n");
+        exit(1);
+    }
 	struct AST_Node *temp1 = makeStatementNode(STATEMENT,IF,$3,$6,"IF");
 	$$ = makeStatementNode(STATEMENT,IF_ELSE,temp1,(struct AST_Node *)NULL,"IF_ELSE");
 }
 ;
-Whilestmt: _WHILE '(' boolstmt ')' _DO Slist _ENDWHILE ';'{
-	 $$ = makeStatementNode(LOOP,WHILE,$3,$6,"WHILE");
+Whilestmt: _WHILE '(' expr ')' _DO Slist _ENDWHILE ';'{
+    if(typeCheckBool($3))
+	    $$ = makeStatementNode(LOOP,WHILE,$3,$6,"WHILE");
+    else{
+        printf("Invalid bool statement\n");
+        exit(1);
+    }
 }
 ;
-RepeatUntil:    _REPEAT '{' Slist '}' _UNTIL '(' boolstmt ')' ';'   {
-    $$ = makeStatementNode(LOOP,REPEAT_UNTIL,$3,$7,"REPEAT_UNTIL");
+RepeatUntil:    _REPEAT '{' Slist '}' _UNTIL '(' expr ')' ';'   {
+    if(typeCheckBool($7))
+        $$ = makeStatementNode(LOOP,REPEAT_UNTIL,$3,$7,"REPEAT_UNTIL");
+    else{
+        printf("Invalid bool statement\n");
+        exit(1);
+    }
 }
 ;
-DoWhile:    _DO '{' Slist '}' _WHILE '(' boolstmt ')' ';'   {
-    $$ = makeStatementNode(LOOP,DO_WHILE,$3,$7,"DO_WHILE");
-}
-;
-boolstmt:	expr _LT expr{
-    int t1 = $1->type,t2 = $3->type;
-if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
-        $$ = makeStatementNode(BOOLEAN,LT,$1,$3,"LT");
+DoWhile:    _DO '{' Slist '}' _WHILE '(' expr ')' ';'   {
+    if(typeCheckBool($7))
+        $$ = makeStatementNode(LOOP,DO_WHILE,$3,$7,"DO_WHILE");
     else{
-        printf("Invalid operand\n");
-        exit(1);
-    }
-}
-|	expr _LE expr{
-    int t1 = $1->type,t2 = $3->type;
-if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
-        $$ = makeStatementNode(BOOLEAN,LE,$1,$3,"LE");
-    else{
-        printf("Invalid operand\n");
-        exit(1);
-    }
-}
-|	expr _GT expr{
-    int t1 = $1->type,t2 = $3->type;
-if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
-        $$ = makeStatementNode(BOOLEAN,GT,$1,$3,"GT");
-    else{
-        printf("Invalid operand\n");
-        exit(1);
-    }
-}
-|	expr _GE expr{
-    int t1 = $1->type,t2 = $3->type;
-if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
-        $$ = makeStatementNode(BOOLEAN,GE,$1,$3,"GE");
-    else{
-        printf("Invalid operand\n");
-        exit(1);
-    }
-}
-|	expr _NE expr{
-    int t1 = $1->type,t2 = $3->type;
-if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
-        $$ = makeStatementNode(BOOLEAN,NE,$1,$3,"NE");
-    else{
-        printf("Invalid operand\n");
-        exit(1);
-    }
-}
-|	expr _EQ expr{
-    int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
-        $$ = makeStatementNode(BOOLEAN,EQ,$1,$3,"EQ");
-    else{
-        printf("Invalid operand\n");
+        printf("Invalid bool statement\n");
         exit(1);
     }
 }
 ;
 //--------------------------Expressions-----------------------
 expr:   expr _PLUS  expr    {
-    int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+    if(typeCheck($1,$3))
         $$ = makeExpressionNode(EXPRESSION,PLUS,'+',$1,$3,"+");
     else{
         printf("Invalid operand\n");
@@ -222,8 +222,7 @@ expr:   expr _PLUS  expr    {
     }
 }
 |   expr _MINUS expr     {
-    int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+    if(typeCheck($1,$3))
         $$ = makeExpressionNode(EXPRESSION,MINUS,'-',$1,$3,"-");
     else{
         printf("Invalid operand\n");
@@ -231,8 +230,7 @@ expr:   expr _PLUS  expr    {
     }
 }
 |   expr _MUL expr   {
-    int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+    if(typeCheck($1,$3))
         $$ = makeExpressionNode(EXPRESSION,MUL,'*',$1,$3,"*");
     else{
         printf("Invalid operand\n");
@@ -240,8 +238,7 @@ expr:   expr _PLUS  expr    {
     }
 }
 |   expr _DIV expr   {
-    int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+    if(typeCheck($1,$3))
         $$ = makeExpressionNode(EXPRESSION,DIV,'/',$1,$3,"/");
     else{
         printf("Invalid operand\n");
@@ -249,11 +246,58 @@ expr:   expr _PLUS  expr    {
     }
 }
 |   expr _MOD expr {
-    int t1 = $1->type,t2 = $3->type;
-    if((t1 == INTEGER || t1 == PLUS || t1 == MINUS || t1 == DIV || t1 == MUL || t1 == MOD) && (t2 == MOD || t2 == INTEGER || t2 == PLUS || t2 == MINUS || t2 == DIV || t2 == MUL))
+    if(typeCheck($1,$3))
         $$ = makeExpressionNode(EXPRESSION,MOD,'%',$1,$3,"%");
     else{
         printf("Invalid operand\n");
+        exit(1);
+    }
+}
+|   expr _LT expr   {
+    if(typeCheck($1,$3))
+        $$ = makeExpressionNode(EXPRESSION,LT,'#',$1,$3,"<");
+    else{
+        printf("Invalid Operator\n");
+        exit(1);
+    }
+}
+|   expr _LE expr   {
+    if(typeCheck($1,$3))
+        $$ = makeExpressionNode(EXPRESSION,LE,'#',$1,$3,"<=");
+    else{
+        printf("Invalid Operator\n");
+        exit(1);
+    }
+}
+|   expr _GT expr   {
+    if(typeCheck($1,$3))
+        $$ = makeExpressionNode(EXPRESSION,GT,'#',$1,$3,">");
+    else{
+        printf("Invalid Operator\n");
+        exit(1);
+    }
+}
+|   expr _GE expr   {
+    if(typeCheck($1,$3))
+        $$ = makeExpressionNode(EXPRESSION,GE,'#',$1,$3,">=");
+    else{
+        printf("Invalid Operator\n");
+        exit(1);
+    }
+}
+|   expr _NE expr   {
+    if(typeCheck($1,$3))
+        $$ = makeExpressionNode(EXPRESSION,NE,'#',$1,$3,"!=");
+    else{
+        printf("Invalid Operator\n");
+        exit(1);
+    }
+}
+|   expr _EQ expr   {
+    if(typeCheck($1,$3))
+        $$ = makeExpressionNode(EXPRESSION,EQ,'#',$1,$3,"==");
+    else{
+        printf("Invalid Operator\n");
         exit(1);
     }
 }
@@ -274,6 +318,10 @@ id: _ID {
     $$->type = curr->type;
 }
 |   _ID '[' expr ']' {
+    if(typeCheckBool($3)){
+        printf("Invalid index\n");
+        exit(1);
+    }
     curr = LookUp(head,$1->varname);
     if(!curr){
         printf("Variable \"%s\" not declared\n",$1->varname);

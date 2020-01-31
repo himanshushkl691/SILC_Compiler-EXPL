@@ -2,6 +2,7 @@
 
 decl
    int n,arr[50],i,j,dup;
+   str p,q;  
 enddecl
 begin
   read(n);
@@ -11,17 +12,23 @@ begin
     i = i+1;
   endwhile;
   i=0;
-  while(i<n) do
+  while(i < n) do
     j=i;
     while(j<n) do
       if(arr[i]>arr[j]) then
         dup = arr[i];
         arr[i] = arr[j];
         arr[j] = dup;
+        if (j >= n) then
+		break;
+	endif;
       endif;
       j = j + 1;
     endwhile;
     i = i+1;
+	if(i >= n) then
+		break;
+	endif;
   endwhile;
   i=0;
   while(i<n) do

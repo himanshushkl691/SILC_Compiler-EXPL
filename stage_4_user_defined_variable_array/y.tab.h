@@ -45,79 +45,77 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    _PLUS = 258,
-    _MINUS = 259,
-    _MUL = 260,
-    _DIV = 261,
-    _MOD = 262,
-    _NUM = 263,
-    _BEGIN = 264,
-    _END = 265,
-    _READ = 266,
-    _WRITE = 267,
-    _FINISHED = 268,
-    _LT = 269,
-    _LE = 270,
-    _GT = 271,
-    _GE = 272,
-    _NE = 273,
-    _EQ = 274,
-    _IF = 275,
-    _THEN = 276,
-    _ELSE = 277,
-    _ENDIF = 278,
-    _WHILE = 279,
-    _DO = 280,
-    _ENDWHILE = 281,
-    _BREAK = 282,
-    _CONTINUE = 283,
-    _BREAKPOINT = 284,
-    _REPEAT = 285,
-    _UNTIL = 286,
-    _INT = 287,
-    _STR = 288,
-    _DECL = 289,
-    _ENDDECL = 290,
-    _ID = 291,
-    _STRING = 292
+    _DECL = 258,
+    _ENDDECL = 259,
+    _PLUS = 260,
+    _MINUS = 261,
+    _MUL = 262,
+    _DIV = 263,
+    _MOD = 264,
+    _NUM = 265,
+    _STRING = 266,
+    _ID = 267,
+    _LT = 268,
+    _LE = 269,
+    _GT = 270,
+    _GE = 271,
+    _NE = 272,
+    _EQ = 273,
+    _INT = 274,
+    _STR = 275,
+    _READ = 276,
+    _WRITE = 277,
+    _BEGIN = 278,
+    _END = 279,
+    _IF = 280,
+    _THEN = 281,
+    _ELSE = 282,
+    _ENDIF = 283,
+    _WHILE = 284,
+    _DO = 285,
+    _ENDWHILE = 286,
+    _REPEAT = 287,
+    _UNTIL = 288,
+    _BREAK = 289,
+    _CONTINUE = 290,
+    _BREAKPOINT = 291
   };
 #endif
 /* Tokens.  */
-#define _PLUS 258
-#define _MINUS 259
-#define _MUL 260
-#define _DIV 261
-#define _MOD 262
-#define _NUM 263
-#define _BEGIN 264
-#define _END 265
-#define _READ 266
-#define _WRITE 267
-#define _FINISHED 268
-#define _LT 269
-#define _LE 270
-#define _GT 271
-#define _GE 272
-#define _NE 273
-#define _EQ 274
-#define _IF 275
-#define _THEN 276
-#define _ELSE 277
-#define _ENDIF 278
-#define _WHILE 279
-#define _DO 280
-#define _ENDWHILE 281
-#define _BREAK 282
-#define _CONTINUE 283
-#define _BREAKPOINT 284
-#define _REPEAT 285
-#define _UNTIL 286
-#define _INT 287
-#define _STR 288
-#define _DECL 289
-#define _ENDDECL 290
-#define _ID 291
-#define _STRING 292
+#define _DECL 258
+#define _ENDDECL 259
+#define _PLUS 260
+#define _MINUS 261
+#define _MUL 262
+#define _DIV 263
+#define _MOD 264
+#define _NUM 265
+#define _STRING 266
+#define _ID 267
+#define _LT 268
+#define _LE 269
+#define _GT 270
+#define _GE 271
+#define _NE 272
+#define _EQ 273
+#define _INT 274
+#define _STR 275
+#define _READ 276
+#define _WRITE 277
+#define _BEGIN 278
+#define _END 279
+#define _IF 280
+#define _THEN 281
+#define _ELSE 282
+#define _ENDIF 283
+#define _WHILE 284
+#define _DO 285
+#define _ENDWHILE 286
+#define _REPEAT 287
+#define _UNTIL 288
+#define _BREAK 289
+#define _CONTINUE 290
+#define _BREAKPOINT 291
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -128,7 +126,7 @@ union YYSTYPE
 
     struct AST_Node *node;
 
-#line 132 "y.tab.h" /* yacc.c:1909  */
+#line 130 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
