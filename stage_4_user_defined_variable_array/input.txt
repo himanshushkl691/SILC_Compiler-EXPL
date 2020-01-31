@@ -1,8 +1,7 @@
 decl
 	int a,b,x,y;
+	str rt,t;
 enddecl
 begin
-	if((a + b) < (x + y)) then
-		write(a);
-	endif;
+	rt = rt + a;
 end

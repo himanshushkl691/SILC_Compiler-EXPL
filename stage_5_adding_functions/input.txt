@@ -1,0 +1,22 @@
+decl
+	int i,arr[10],brr[11];
+enddecl
+begin
+	i = 0;
+	arr[6 + 3] = 10000;
+	write(arr[9]);
+	while(i < 10) do
+		arr[i] = i;
+		i = i + 1;
+	endwhile;
+	i = 0;
+	while(i < 11) do
+		brr[i] = i * i + 1;
+		i = i + 1;
+	endwhile;
+	i = 0;
+	while(i < 10) do
+		write(brr[arr[i]]);
+		i = i + 1;
+	endwhile;
+end
