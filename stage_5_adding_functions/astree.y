@@ -8,7 +8,9 @@
     int yylex(void);
     char *yytext;
     FILE *ft;
-    struct GSTNode *head, *curr;
+    struct GSTNode *gst;
+    struct LSTable *lst;
+    struct ParamList *Parserparam;
     char *keyword[20] = {"begin", "end", "read", "write", "if", "else", "then", "endif", "while", "do", "endwhile", "repeat", "until", "int", "str", "decl", "enddecl", "break", "continue", "breakpoint"};
 
 %}
@@ -19,8 +21,11 @@
 
 /**/
 %type <node> _BREAK _CONTINUE _BREAKPOINT
-%type <node> DeclList Decl Declarations Varlist
-%type <node> program
+%type <node> GDeclBlock GDeclList GDecl GIdList GId
+%type <node> LDecl LDeclBlock LDeclList IdList
+%type <node> Param ParamList
+%type <node> FnDef FnDefBlock MainBlock Body
+%type <node> Program
 %type <node> Slist stmt Inputstmt Outputstmt Assgstmt Ifstmt Whilestmt RepeatUntil DoWhile
 %type <node> _NUM _STRING
 %type <node> expr stringExp _ID id _END
@@ -46,7 +51,7 @@
 //repeat-until
 %token _REPEAT _UNTIL
 //break, continue, breakpoint
-%token _BREAK _CONTINUE _BREAKPOINT
+%token _BREAK _CONTINUE _BREAKPOINT _MAIN
 /*ASSOCIATIVITY*/
 %left _LT _LE
 %left _GT _GE
@@ -54,55 +59,75 @@
 %left _PLUS _MINUS
 %left _MUL _DIV _MOD
 /*STARTING Non-Terminal*/
-%start program
+%start Program
 
 %%
 //---------------------------Rules----------------------------
-//-------------------------Declarations-----------------------
-Declarations:   _DECL DeclList _ENDDECL  {$$ = NULL;printGST(head);}
-|   _DECL _ENDDECL  {}
+
+//------------------------MainBlock---------------------------
+MainBlock   :   _INT    _MAIN   '(' ')' '{' LDeclBlock  Body    '}'
 ;
-DeclList:   DeclList Decl   {}
-|   Decl    {}
+
+//-------------------------Body-------------------------------
+Body    :   _BEGIN  Slist   _END
+|   _BEGIN  _END
 ;
-Decl:   _INT Varlist  ';' {
-    $$ = ASTchangeType(head,$2,INTEGER);
-}
-|   _STR Varlist  ';' {
-    $$ = ASTchangeType(head,$2,STRING);
+
+//-------------------------Program----------------------------
+Program :   GDeclBlock   FnDefBlock   MainBlock
+|   GDeclBlock  MainBlock
+|   MainBlock
+;
+
+//-----------------------Global Declarations------------------
+GDeclBlock  :   _DECL   GDeclList   _ENDDECL
+|   _DECL   _ENDDECL
+;
+GDeclList   :   GDeclList   GDecl
+|   GDecl
+;
+GDecl   :   _INT    GIdList ';'
+|   _STR    GIdList ';'
+;
+GIdList :   GIdList ',' GId
+|   GId
+;
+GId :   _ID
+|   _ID '[' _NUM    ']'
+|   _ID '(' ParamList   ')' {
+    head = GSTInstall
 }
 ;
-Varlist:    Varlist ',' _ID {
-    head = InstallID(head,NONE,VARIABLE,1,$3->varname);
-    $$ = makeStatementNode(STATEMENT,STATEMENT,$1,$3,",");
-}
-|   Varlist ',' _ID '[' _NUM ']'    {
-    head = InstallID(head,NONE,ARRAY_VARIABLE,$5->val,$3->varname);
-    $$ = makeStatementNode(STATEMENT,STATEMENT,$1,$3,",");
-}
-|   _ID {
-    head = InstallID(head,NONE,VARIABLE,1,$1->varname);
-    $$ = $1;
-}
-|   _ID '[' _NUM ']'    {
-    head = InstallID(head,NONE,ARRAY_VARIABLE,$3->val,$1->varname);
-    $$ = $1;
-}
+
+//------------------------Function Defition-------------------
+FnDefBlock  :   FnDefBlock  FnDef
+|   FnDef
 ;
-//----------------------------Program---------------------
-program:    Declarations _BEGIN Slist _END {
-    $$ = $3;
-    printf("Parsing completed\n");
-    print_tree($3);
-    printf("\n");
-    code_generator(ft,$3,head);
-    exit(1);
-}
-|   Declarations _BEGIN  _END   {
-        $$ = $3;
-        printf("Parsing Completed\n");
-        exit(1);
-    }
+FnDef   :   _INT    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'
+|   _STR    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'
+;
+
+//-------------------------Parameter List---------------------
+ParamList   :   ParamList   ',' Param
+|   Param
+|
+;
+Param   :   _INT    _ID {Parserparam = ParamInsert(Parserparam,$->varname,INTEGER);}
+|   _STR    _ID {Parserparam = ParamInsert(Parserparam,$->varname,STRING);}
+;
+
+//-----------------------Local Declaration--------------------
+LDeclBlock  :   _DECL   LDeclList   _ENDDECL
+|   _DECL   _ENDDECL
+;
+LDeclList   :   LDeclList   LDecl
+|   LDecl
+;
+LDecl   :   _INT    IdList  ';'
+|   _STR    IdList  ';'
+;
+IdList  :   IdList  ',' _ID
+|   _ID
 ;
 //-----------------------Statement List-------------------
 Slist:  Slist stmt{
@@ -145,7 +170,7 @@ stmt:	Inputstmt {
 }
 ;
 Inputstmt:  _READ '(' id ')' ';'{
-    $$ = makeStatementNode(STATEMENT,READ,$3,(struct AST_Node *)NULL,"Read");
+    $$ = makeTreeNode(STATEMENT,READ,NULL,0,0,$3,NULL,"Read");
 }
 ;
 Outputstmt: _WRITE '(' stringExp ')' ';' {
@@ -306,7 +331,7 @@ expr:   expr _PLUS  expr    {
 //----------------------------Identifiers-----------------------
 id: _ID {
     $$ = $1;
-    curr = LookUp(head,$$->varname);
+    curr = GSTLookUp(head,$$->varname);
     if(!curr){
         printf("Variable \"%s\" not declared\n",$$->varname);
         exit(1);
@@ -318,7 +343,7 @@ id: _ID {
         printf("Invalid index\n");
         exit(1);
     }
-    curr = LookUp(head,$1->varname);
+    curr = GSTLookUp(head,$1->varname);
     if(!curr){
         printf("Variable \"%s\" not declared\n",$1->varname);
         exit(1);
@@ -339,7 +364,9 @@ void yyerror(const char *err){
 }
 
 int main(int argc,char *argv[]){
-    head = init_ds(head,keyword);
+    gst = init_GSTable();
+    lst = init_LSTable();
+    Parserparam = init_ParamList();
     line = 1;
     if(argc > 1){
 		printf("Generating file as %s\n",argv[1]);

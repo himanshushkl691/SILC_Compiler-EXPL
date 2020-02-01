@@ -1,44 +1,98 @@
-#define PROGRAM 0
-#define STATEMENT 1
-#define EXPRESSION 2
-#define VARIABLE 3
-#define INPUT 4
-#define OUTPUT 5
-#define ASSIGNMENT 6
-#define PLUS 7
-#define MINUS 8
-#define MUL 9
-#define DIV 10
-#define CONSTANT 11
-#define INTEGER 12
-#define READ 13
-#define WRITE 14
-#define BOOLEAN 15
-#define LT 16
-#define LE 17
-#define GT 18
-#define GE 19
-#define NE 20
-#define EQ 21
-#define IF 22
-#define ELSE 23
-#define IF_ELSE 24
-#define WHILE 25
-#define BREAK 26
-#define CONTINUE 27
-#define BREAKPOINT 28
-#define LOOP 29
-#define REPEAT_UNTIL 30
-#define DO_WHILE 31
-#define STRING 32
-#define NONE 33
-#define RESERVED 34
-#define ARRAY_VARIABLE 35
-#define MOD 36
+#define NONE 0
+
+#define EXPRESSION 1
+#define VARIABLE 2
+#define ARRAY_VARIABLE 3
+#define STATEMENT 4
+#define ASSIGNMENT 5
+
+#define STRING 6
+#define INTEGER 7
+#define BOOLEAN 8
+#define CONSTANT 9
+#define RESERVED 10
+#define FUNCTION 11
+
+#define INPUT 12
+#define OUTPUT 13
+#define READ 14
+#define WRITE 15
+
+#define BREAK 16
+#define CONTINUE 17
+#define BREAKPOINT 18
+
+#define IF_ELSE 19
+
+#define LOOP 20
+#define WHILE 21
+#define REPEAT_UNTIL 22
+#define DO_WHILE 23
+
+#define PLUS 24
+#define MINUS 25
+#define DIV 26
+#define MUL 27
+#define MOD 28
+
+#define LT 29
+#define LE 30
+#define GT 31
+#define GE 32
+#define NE 33
+#define EQ 34
 
 int ADDR;
 int LABEL;
 int line;
+
+//-----------------------------------------Parameter Linked List-------------------------------------------
+struct ParamNode
+{
+	char *varname;
+	int type;
+	struct ParamNode *next;
+};
+
+struct ParamList
+{
+	struct ParamNode *head;
+	struct ParamNode *tail;
+	int size;
+};
+
+struct ParamNode *init_ParamNode(char *, int);
+struct ParamList *init_ParamList();
+struct ParamList *ParamInsert(struct ParamList *, char *, int);
+struct ParamList *ParamDelete(struct ParamList *h);
+void printParamList(struct ParamList *);
+int ParamGetSize(struct ParamList *);
+//---------------------------------------------------------------------------------------------------------
+
+//-----------------------------------------Local Symbol Table-----------------------------------------------
+struct LSTNode
+{
+	int type;
+	char *varname;
+	int binding_addr;
+	struct LSTNode *next;
+};
+
+struct LSTable
+{
+	struct LSTNode *head;
+	struct LSTNode *tail;
+	int size;
+};
+
+struct LSTNode *init_LSTNode(int, char *, int);
+struct LSTable *init_LSTable();
+struct LSTable *LSTInstall(struct LSTable *, char *, int);
+struct LSTNode *LSTLookUp(struct LSTable *, char *);
+struct LSTable *LSTDelete(struct LSTable *);
+void printLSTable(struct LSTable *);
+int LSTGetSize(struct LSTable *);
+//----------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------Global Symbol Table----------------------------------------------
 struct GSTNode
@@ -48,37 +102,54 @@ struct GSTNode
 	char *varname;
 	int binding_addr;
 	int size;
+	struct ParamList *param;
+	struct LSTable *lst;
 	struct GSTNode *next;
 };
 
-//for creating
-struct GSTNode *init_node(int, int, int, char *);
-//checks whether id is already present in symbol table if it is returns pointer to it o/w NULL
-struct GSTNode *LookUp(struct GSTNode *, char *);
+struct GSTable
+{
+	struct GSTNode *head, *tail;
+	int size;
+};
+
+//for creating new global symbol table
+struct GSTable *init_GSTable();
+//for creating new node
+struct GSTNode *init_GSTNode(int, int, char *, int, struct ParamList *, struct LSTable *);
+//checks whether id is already present in symbol table if it is, it returns pointer to it o/w NULL
+struct GSTNode *GSTLookUp(struct GSTable *, char *);
 //installs identifier in symbol table
-struct GSTNode *InstallID(struct GSTNode *, int, int, int, char *);
-//install reserved keywords in symbol table
-struct GSTNode *InstallRes(struct GSTNode *, int, char *);
-//function for retrieving binding address of variable
-int getAddr(struct GSTNode *, char *);
-//for changing type of variable
-struct GSTNode *GSTchangeType(struct GSTNode *, int, char *);
+struct GSTable *GSTInstall(struct GSTable *, int, int, char *, int, struct ParamList *, struct LSTable *);
+//for deleting GSTable
+struct GSTable *GSTDelete(struct GSTable *);
+//for getting size of global symbol table
+int GSTableGetSize(struct GSTable *);
 //printing Symbol Table
-void printGST(struct GSTNode *);
+void printGST(struct GSTable *);
 //-------------------------------------------------------------------------------------------------------
 
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
 struct AST_Node
 {
-	int val;
+	int nodetype;
 	int type;
 	char *varname;
-	int nodetype;
-	char *oper;
+	int oper;
+	int val;
 	char *s;
+	struct GSTNode *gst;
+	struct LSTable *lst;
 	struct AST_Node *left, *right;
 };
 
+//function declaration for Abstract Syntax Tree
+struct AST_Node *makeTreeNode(int, int, char *, int, int, struct AST_Node *, struct AST_Node *, struct GSTNode *, struct LSTable *, char *);
+//for printing syntax tree
+void print_tree(struct AST_Node *);
+//----------------------------------------------------------------------------------------------------------
+
+//-----------------------------------Auxiliary Function----------------------------------------
 //returns next available address
 int allocate(int);
 //resets addr variable to zero
@@ -87,32 +158,6 @@ void init_storage();
 void init_Label();
 //returns next available LABEL
 int getLabel();
-//initialize global variables and data structures
-struct GSTNode *init_ds(struct GSTNode *, char **);
-
-//function declaration for Abstract Syntax Tree
-//for creating variable node
-struct AST_Node *makeVariableLeafNode(int, int, char *, char *);
-//for creating constant node
-struct AST_Node *makeConstantLeafNode(int, int, int, char *);
-//for creating constant string node
-struct AST_Node *makeConstantStringLeaf(int, int, char *);
-//create array variable node
-struct AST_Node *makeArrVariableNode(int, int, struct AST_Node *, struct AST_Node *, char *);
-//for creating break and continue statement node
-struct AST_Node *makeCBNode(int, int, char *);
-//for creating Statement node of category nodetype inlcludes assignment statement
-struct AST_Node *makeStatementNode(int, int, struct AST_Node *, struct AST_Node *, char *);
-//for creating node for expressions left and right subtree are expression
-struct AST_Node *makeExpressionNode(int, int, char, struct AST_Node *, struct AST_Node *, char *);
-//makes and return read or write statement node
-struct AST_Node *makeRWNode(int, int, struct AST_Node *, char *);
-//for changing type of nodes according to symbol table
-struct AST_Node *ASTchangeType(struct GSTNode *, struct AST_Node *, int);
-void print_tree(struct AST_Node *);
-//----------------------------------------------------------------------------------------------------------
-
-//-----------------------------------Auxiliary Function----------------------------------------
 int typeCheckExp(struct AST_Node *);
 int typeCheckBool(struct AST_Node *);
 int typeCheckStr(struct AST_Node *);

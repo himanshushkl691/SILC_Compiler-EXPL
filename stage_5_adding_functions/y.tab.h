@@ -78,7 +78,8 @@ extern int yydebug;
     _UNTIL = 288,
     _BREAK = 289,
     _CONTINUE = 290,
-    _BREAKPOINT = 291
+    _BREAKPOINT = 291,
+    _MAIN = 292
   };
 #endif
 /* Tokens.  */
@@ -116,6 +117,7 @@ extern int yydebug;
 #define _BREAK 289
 #define _CONTINUE 290
 #define _BREAKPOINT 291
+#define _MAIN 292
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -126,7 +128,7 @@ union YYSTYPE
 
     struct AST_Node *node;
 
-#line 130 "y.tab.h" /* yacc.c:1909  */
+#line 132 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

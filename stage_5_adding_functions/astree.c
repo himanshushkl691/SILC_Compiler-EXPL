@@ -1,3 +1,4 @@
+#include "astree.h"
 //-------------------------Static Storage Allocation----------------------------------
 int allocate(int size)
 {
@@ -25,35 +26,112 @@ int getLabel()
 }
 //-----------------------------------------------------------------------------------
 
-//-----------------------------Global Symbol Table-----------------------------------
-void printGST(struct GSTNode *root)
+//-----------------------------------------Parameter Linked List-------------------------------------------
+struct ParamNode *init_ParamNode(char *s, int type)
 {
-	struct GSTNode *curr = root;
-	while (curr)
-	{
-		if (curr->type != RESERVED)
-			printf("%s		%d		%d		%d		%d\n", curr->varname, curr->type, curr->type_of_var, curr->size, curr->binding_addr);
-		curr = curr->next;
-	}
-}
-
-struct GSTNode *init_node(int type, int type_of_var, int size, char *s)
-{
-	struct GSTNode *newn = (struct GSTNode *)malloc(sizeof(struct GSTNode));
-	newn->varname = (char *)malloc(strlen(s) * sizeof(char));
+	struct ParamNode *newn = (struct ParamNode *)malloc(sizeof(struct ParamNode));
+	newn->varname = (char *)malloc(sizeof(char) * strlen(s));
 	newn->varname = strdup(s);
 	newn->type = type;
-	newn->type_of_var = type_of_var;
-	newn->size = size;
-	newn->binding_addr = allocate(size);
 	newn->next = NULL;
 	return newn;
 }
 
-struct GSTNode *LookUp(struct GSTNode *root, char *s)
+struct ParamList *init_ParamList()
 {
-	struct GSTNode *curr;
-	curr = root;
+	struct ParamList *newn = (struct ParamList *)malloc(sizeof(struct ParamList));
+	newn->head = newn->tail = NULL;
+	newn->size = 0;
+	return newn;
+}
+
+struct ParamList *ParamInsert(struct ParamList *h, char *s, int type)
+{
+	if (h->head == NULL)
+		h->head = h->tail = init_ParamNode(s, type);
+	else
+	{
+		h->tail->next = init_ParamNode(s, type);
+		h->tail = h->tail->next;
+	}
+	h->size++;
+	return h;
+}
+
+struct ParamList *ParamDelete(struct ParamList *h)
+{
+	struct ParamNode *curr, *curr2;
+	curr = h->head;
+	while (curr)
+	{
+		curr2 = curr->next;
+		curr = NULL;
+		free(curr);
+		curr = curr2;
+	}
+	h = init_ParamList();
+	return h;
+}
+
+void printParamList(struct ParamList *h)
+{
+	if (h)
+	{
+		struct ParamNode *curr = h->head;
+		while (curr)
+		{
+			printf("%s %d\n", curr->varname, curr->type);
+			curr = curr->next;
+		}
+	}
+	return;
+}
+
+int ParamGetSize(struct ParamList *h)
+{
+	if (h)
+		return h->size;
+	else
+		return 0;
+}
+//---------------------------------------------------------------------------------------------------------
+
+//-----------------------------------------Local Symbol Table-----------------------------------------------
+struct LSTNode *init_LSTNode(int type, char *var, int binding)
+{
+	struct LSTNode *newn = (struct LSTNode *)malloc(sizeof(struct LSTNode));
+	newn->type = type;
+	newn->varname = (char *)malloc(strlen(var) * sizeof(char));
+	newn->varname = strdup(var);
+	newn->binding_addr = binding;
+	newn->next = NULL;
+	return newn;
+}
+
+struct LSTable *init_LSTable()
+{
+	struct LSTable *newn = (struct LSTable *)malloc(sizeof(struct LSTable));
+	newn->head = newn->tail = NULL;
+	newn->size = 0;
+	return newn;
+}
+
+struct LSTable *LSTInstall(struct LSTable *h, char *varname, int type)
+{
+	if (h->head == NULL)
+		h->head = h->tail = init_LSTNode(type, varname, h->size);
+	else
+	{
+		h->tail->next = init_LSTNode(type, varname, h->size);
+		h->tail = h->tail->next;
+	}
+	h->size++;
+	return h;
+}
+
+struct LSTNode *LSTLookUp(struct LSTable *h, char *s)
+{
+	struct LSTNode *curr = h->head;
 	while (curr)
 	{
 		if (strcmp(curr->varname, s) == 0)
@@ -63,208 +141,160 @@ struct GSTNode *LookUp(struct GSTNode *root, char *s)
 	return NULL;
 }
 
-struct GSTNode *InstallID(struct GSTNode *root, int type, int type_of_var, int size, char *s)
+struct LSTable *LSTDelete(struct LSTable *h)
 {
-	struct GSTNode *curr = LookUp(root, s);
-	if (curr && curr->type == RESERVED)
+	struct LSTNode *curr, *curr2;
+	curr = h->head;
+	while (curr)
 	{
-		printf("\"%s\" is a reserved keyword cannot be an identifier\n", s);
-		exit(1);
+		curr2 = curr->next;
+		curr = NULL;
+		free(curr);
+		curr = curr2;
 	}
-	else if (curr)
+	h = init_LSTable();
+	return h;
+}
+
+void printLSTable(struct LSTable *h)
+{
+	if (h)
+	{
+		struct LSTNode *curr = h->head;
+		while (curr)
+		{
+			printf("%s %d %d\n", curr->varname, curr->type, curr->binding_addr);
+			curr = curr->next;
+		}
+	}
+}
+
+int LSTGetSize(struct LSTable *h)
+{
+	if (h)
+		return h->size;
+	else
+		return 0;
+}
+//----------------------------------------------------------------------------------------------------------
+
+//-----------------------------Global Symbol Table-----------------------------------
+struct GSTNode *init_GSTNode(int type, int type_of_var, char *varname, int size, struct ParamList *p, struct LSTable *l)
+{
+	struct GSTNode *newn = (struct GSTNode *)malloc(sizeof(struct GSTNode));
+	newn->type = type;
+	newn->type_of_var = type_of_var;
+	newn->varname = (char *)malloc(strlen(varname) * sizeof(char));
+	newn->varname = strdup(varname);
+	newn->size = size;
+	if (type_of_var != FUNCTION)
+		newn->binding_addr = allocate(size);
+	else
+		newn->binding_addr = getLabel();
+	newn->lst = l;
+	newn->param = p;
+	newn->next = NULL;
+	return newn;
+}
+
+struct GSTable *init_GSTable()
+{
+	struct GSTable *newn = (struct GSTable *)malloc(sizeof(struct GSTable));
+	newn->head = newn->tail = NULL;
+	newn->size = 0;
+	return newn;
+}
+
+struct GSTNode *GSTLookUp(struct GSTable *h, char *s)
+{
+	struct GSTNode *curr;
+	curr = h->head;
+	while (curr)
+	{
+		if (strcmp(curr->varname, s) == 0)
+			return curr;
+		curr = curr->next;
+	}
+	return NULL;
+}
+
+struct GSTable *GSTInstall(struct GSTable *h, int type, int type_of_var, char *varname, int size, struct ParamList *p, struct LSTable *l)
+{
+	struct GSTNode *curr = GSTLookUp(h, varname);
+	if (curr)
 	{
 		printf("Variable \"%s\" redeclared\n", s);
 		exit(1);
 	}
 	else
 	{
-		struct GSTNode *curr, *prev;
-		curr = root;
-		prev = NULL;
-		while (curr)
-		{
-			prev = curr;
-			curr = curr->next;
-		}
-		if (prev)
-		{
-			prev->next = init_node(type, type_of_var, size, s);
-		}
-		else
-			root = init_node(type, type_of_var, size, s);
-		if (LookUp(root, s))
-			return root;
+		if (h->head == NULL)
+			h->head = h->tail = init_GSTNode(type, type_of_var, varname, size, p, l);
 		else
 		{
-			printf("Installation error\n");
-			exit(1);
+			h->tail->next = init_GSTNode(type, type_of_var, varname, size, p, l);
+			h->tail = h->tail->next;
 		}
+		h->size++;
 	}
+	return h;
 }
 
-struct GSTNode *InstallRes(struct GSTNode *root, int type, char *s)
+struct GSTable *GSTDelete(struct GSTable *h)
 {
-	if (LookUp(root, s))
-		return root;
+	struct GSTNode *curr, *curr2;
+	curr = h->head;
+	while (curr)
+	{
+		curr2 = curr->next;
+		curr = NULL;
+		free(curr);
+		curr = curr2;
+	}
+	h = init_GSTable();
+	return h;
+}
+
+int GSTableGetSize(struct GSTable *g)
+{
+	if (g)
+		return g->size;
 	else
-	{
-		struct GSTNode *curr, *prev;
-		curr = root;
-		prev = NULL;
-		while (curr)
-		{
-			prev = curr;
-			curr = curr->next;
-		}
-		if (prev)
-			prev->next = init_node(type, RESERVED, 1, s);
-		else
-			root = init_node(type, RESERVED, 1, s);
-		if (LookUp(root, s))
-			return root;
-		else
-		{
-			printf("Installation error\n");
-			exit(1);
-		}
-	}
+		return 0;
 }
 
-struct GSTNode *GSTchangeType(struct GSTNode *root, int type, char *s)
+void printGST(struct GSTable *g)
 {
-	struct GSTNode *curr = LookUp(root, s);
-	if (!curr)
+	struct GSTNode *curr = g->head;
+	while (curr)
 	{
-		printf("ChangeTypeError: Variable not found\n");
-		exit(1);
+		printf("%s		%d		%d		%d		%d\n", curr->varname, curr->type, curr->type_of_var, curr->size, curr->binding_addr);
+		curr = curr->next;
 	}
-	curr->type = type;
-	return root;
-}
-
-int getAddr(struct GSTNode *root, char *s)
-{
-	struct GSTNode *curr;
-	curr = LookUp(root, s);
-	if (!curr)
-	{
-		printf("AddressRetrievalError: Variable not declared\n");
-		exit(1);
-	}
-	return (curr->binding_addr);
 }
 //-----------------------------------------------------------------------------------
 
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
-struct AST_Node *makeVariableLeafNode(int nodetype, int type, char *varname, char *s)
-{
-	struct AST_Node *newn;
-	newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-	newn->oper = (char *)malloc(sizeof(char));
-	newn->s = (char *)malloc(strlen(s) * sizeof(char));
-	newn->s = strdup(s);
-	newn->type = type;
-	newn->nodetype = nodetype;
-	newn->varname = (char *)malloc(strlen(varname) * sizeof(char));
-	newn->varname = strdup(varname);
-	newn->left = newn->right = NULL;
-	newn->oper = NULL;
-	return newn;
-}
-
-struct AST_Node *makeArrVariableNode(int nodetype, int type, struct AST_Node *l, struct AST_Node *r, char *s)
-{
-	struct AST_Node *newn;
-	newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-	newn->nodetype = nodetype;
-	newn->type = type;
-	newn->s = (char *)malloc(strlen(s) * sizeof(char));
-	newn->s = strdup(s);
-	newn->varname = newn->oper = NULL;
-	newn->left = l;
-	newn->right = r;
-	return newn;
-}
-
-struct AST_Node *makeConstantLeafNode(int nodetype, int type, int val, char *s)
+struct AST_Node *makeTreeNode(int nodetype, int type, char *varname, int oper, int val, struct AST_Node *l, struct AST_Node *r, struct GSTNode *gst, struct LSTable *lst, char *s)
 {
 	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-	newn->oper = (char *)malloc(sizeof(char));
-	newn->s = (char *)malloc(strlen(s) * sizeof(char));
-	newn->s = strdup(s);
 	newn->nodetype = nodetype;
 	newn->type = type;
+	if (varname)
+	{
+		newn->varname = (char *)malloc(strlen(varname) * sizeof(char));
+		newn->varname = strdup(varname);
+	}
+	else
+		newn->varname = NULL;
+	newn->oper = oper;
 	newn->val = val;
-	newn->left = newn->right = NULL;
-	newn->oper = newn->varname = NULL;
-	return newn;
-}
-
-struct AST_Node *makeConstantStringLeaf(int nodetype, int type, char *s)
-{
-	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
 	newn->s = (char *)malloc(strlen(s) * sizeof(char));
 	newn->s = strdup(s);
-	newn->nodetype = nodetype;
-	newn->type = type;
-	newn->left = newn->right = NULL;
-	newn->oper = newn->varname = NULL;
-	return newn;
-}
-
-//for break and continue
-struct AST_Node *makeCBNode(int nodetype, int type, char *s)
-{
-	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-	newn->nodetype = nodetype;
-	newn->type = type;
-	newn->s = (char *)malloc(strlen(s) * sizeof(char));
-	newn->s = strdup(s);
-	newn->left = newn->right = NULL;
-	newn->oper = newn->varname = NULL;
-	return newn;
-}
-
-struct AST_Node *makeStatementNode(int nodetype, int type, struct AST_Node *l, struct AST_Node *r, char *s)
-{
-	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-	newn->oper = (char *)malloc(sizeof(char));
-	newn->s = (char *)malloc(strlen(s) * sizeof(char));
-	newn->s = strdup(s);
-	newn->nodetype = nodetype;
-	newn->type = type;
-	newn->varname = newn->oper = NULL;
+	newn->lst = lst;
+	newn->gst = gst;
 	newn->left = l;
 	newn->right = r;
-	return newn;
-}
-
-struct AST_Node *makeExpressionNode(int nodetype, int type, char op, struct AST_Node *l, struct AST_Node *r, char *s)
-{
-	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-	newn->nodetype = nodetype;
-	newn->type = type;
-	newn->oper = (char *)malloc(sizeof(char));
-	newn->s = (char *)malloc(strlen(s) * sizeof(char));
-	newn->s = strdup(s);
-	*(newn->oper) = op;
-	newn->left = l;
-	newn->right = r;
-	newn->varname = NULL;
-	return newn;
-}
-
-struct AST_Node *makeRWNode(int nodetype, int type, struct AST_Node *l, char *s)
-{
-	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-	newn->oper = (char *)malloc(sizeof(char));
-	newn->s = (char *)malloc(strlen(s) * sizeof(char));
-	newn->s = strdup(s);
-	newn->nodetype = nodetype;
-	newn->type = type;
-	newn->right = NULL;
-	newn->left = l;
-	newn->varname = newn->oper = NULL;
 	return newn;
 }
 
@@ -276,20 +306,6 @@ void print_tree(struct AST_Node *root)
 		printf("%s ", root->s);
 		print_tree(root->right);
 	}
-}
-
-struct AST_Node *ASTchangeType(struct GSTNode *head, struct AST_Node *root, int type)
-{
-	if (root)
-	{
-		root->left = ASTchangeType(head, root->left, type);
-		root->right = ASTchangeType(head, root->right, type);
-		if (root->nodetype == VARIABLE)
-			head = GSTchangeType(head, type, root->varname);
-		root = NULL;
-		free(root);
-	}
-	return root;
 }
 //----------------------------------------------------------------------------------------------------------
 
@@ -370,7 +386,7 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTNod
 	}
 	if (root->nodetype == VARIABLE && root->type == INTEGER && root->varname != NULL)
 	{
-		int aRes = getAddr(head, root->varname);
+		int aRes = GSTgetAddr(head, root->varname);
 		reg_idx id = getReg();
 		fprintf(ft, "MOV R%d, [%d]\n", id, aRes);
 		return id;
@@ -383,7 +399,7 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTNod
 	}
 	if (root->nodetype == VARIABLE && root->type == STRING && root->varname != NULL)
 	{
-		int aRes = getAddr(head, root->varname);
+		int aRes = GSTgetAddr(head, root->varname);
 		reg_idx id = getReg();
 		fprintf(ft, "MOV R%d, [%d]\n", id, aRes);
 		return id;
@@ -391,7 +407,7 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTNod
 	if (root->nodetype == ARRAY_VARIABLE)
 	{
 		reg_idx id = getReg();
-		reg_idx aRes = getArrayNodeAddress(ft, root, head);
+		reg_idx aRes = GSTgetArrayNodeAddress(ft, root, head);
 		fprintf(ft, "MOV R%d, [R%d]\n", id, aRes);
 		aRes = freeReg();
 		return id;
@@ -432,9 +448,9 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTNod
 	}
 }
 
-reg_idx getArrayNodeAddress(FILE *ft, struct AST_Node *root, struct GSTNode *head)
+reg_idx GSTgetArrayNodeAddress(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 {
-	struct GSTNode *curr = LookUp(head, root->left->varname);
+	struct GSTNode *curr = GSTLookUp(head, root->left->varname);
 	if (!curr)
 		exit(1);
 	reg_idx temp0 = getReg();
@@ -453,12 +469,12 @@ int assignment_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *h
 		int aRes = -1;
 		if (root->left->nodetype == VARIABLE)
 		{
-			aRes = getAddr(head, root->left->varname);
+			aRes = GSTgetAddr(head, root->left->varname);
 			fprintf(ft, "MOV [%d], R%d\n", aRes, id);
 		}
 		else if (root->left->nodetype == ARRAY_VARIABLE)
 		{
-			aRes = getArrayNodeAddress(ft, root->left, head);
+			aRes = GSTgetArrayNodeAddress(ft, root->left, head);
 			fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
 			aRes = freeReg();
 		}
@@ -505,12 +521,12 @@ int read_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 		reg_idx id = getReg();
 		if (root->left->nodetype == VARIABLE)
 		{
-			aRes = getAddr(head, root->left->varname);
+			aRes = GSTgetAddr(head, root->left->varname);
 			fprintf(ft, "MOV R%d, %d\n", id, aRes);
 		}
 		else if (root->left->nodetype == ARRAY_VARIABLE)
 		{
-			aRes = getArrayNodeAddress(ft, root->left, head);
+			aRes = GSTgetArrayNodeAddress(ft, root->left, head);
 			fprintf(ft, "MOV R%d, R%d\n", id, aRes);
 			aRes = freeReg();
 		}
@@ -754,14 +770,3 @@ void code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
 	fclose(ft);
 }
 //-----------------------------------------------------------------------------------
-
-//initialize global variables and data structures
-struct GSTNode *init_ds(struct GSTNode *head, char **keyword)
-{
-	init_storage();
-	init_reg_pool();
-	init_Label();
-	for (int i = 0; i < 20; i++)
-		head = InstallRes(head, RESERVED, keyword[i]);
-	return head;
-}

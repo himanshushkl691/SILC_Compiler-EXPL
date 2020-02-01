@@ -27,14 +27,14 @@ int         {return _INT;}
 str         {return _STR;}
 decl        {return _DECL;}
 enddecl     {return _ENDDECL;}
-break       {yylval.node = makeCBNode(BREAK,BREAK,yytext);return _BREAK;}
-continue    {yylval.node = makeCBNode(CONTINUE,CONTINUE,yytext);return _CONTINUE;}
-breakpoint  {yylval.node = makeCBNode(BREAKPOINT,BREAKPOINT,yytext);return _BREAKPOINT;}
-([\"](.)*[\"])  {yylval.node = makeConstantStringLeaf(CONSTANT,STRING,yytext);return _STRING;}
-({alpha}({alpha}|{digit})*) 	{yylval.node = makeVariableLeafNode(VARIABLE,NONE,yytext,yytext);return _ID;}
+break       {yylval.node = makeTreeNode(BREAK,BREAK,NULL,-1,-1,NULL,NULL,NULL,NULL,yytext);return _BREAK;}
+continue    {yylval.node = makeTreeNode(CONTINUE,CONTINUE,NULL,-1,-1,NULL,NULL,NULL,NULL,yytext);return _CONTINUE;}
+breakpoint  {yylval.node = makeTreeNode(BREAKPOINT,BREAKPOINT,NULL,-1,-1,NULL,NULL,NULL,NULL,yytext);return _BREAKPOINT;}
+([\"](.)*[\"])  {yylval.node = makeTreeNode(CONSTANT,STRING,NULL,-1,-1,NULL,NULL,NULL,NULL,yytext);return _STRING;}
+({alpha}({alpha}|{digit})*) 	{yylval.node = makeTreeNode(VARIABLE,NONE,yytext,-1,-1,NULL,NULL,NULL,NULL,yytext);return _ID;}
 ({digit}) 	{
     number = atoi(yytext);
-    yylval.node = makeConstantLeafNode(CONSTANT,INTEGER,number,yytext);
+    yylval.node = makeTreeNode(CONSTANT,INTEGER,NULL,-1,number,NULL,NULL,NULL,NULL,yytext);
     return _NUM;
 }
 ";" 		{return *yytext;}
