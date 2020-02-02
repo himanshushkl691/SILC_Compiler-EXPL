@@ -23,34 +23,38 @@
 #define BREAKPOINT 18
 
 #define IF_ELSE 19
+#define IF 20
+#define ELSE 21
 
-#define LOOP 20
-#define WHILE 21
-#define REPEAT_UNTIL 22
-#define DO_WHILE 23
+#define LOOP 22
+#define WHILE 23
+#define REPEAT_UNTIL 24
+#define DO_WHILE 25
 
-#define PLUS 24
-#define MINUS 25
-#define DIV 26
-#define MUL 27
-#define MOD 28
+#define PLUS 26
+#define MINUS 27
+#define DIV 28
+#define MUL 29
+#define MOD 30
 
-#define LT 29
-#define LE 30
-#define GT 31
-#define GE 32
-#define NE 33
-#define EQ 34
+#define LT 31
+#define LE 32
+#define GT 33
+#define GE 34
+#define NE 35
+#define EQ 36
 
 int ADDR;
 int LABEL;
 int line;
+int TYPE;
 
 //-----------------------------------------Parameter Linked List-------------------------------------------
 struct ParamNode
 {
 	char *varname;
 	int type;
+	int type_of_var;
 	struct ParamNode *next;
 };
 
@@ -61,9 +65,9 @@ struct ParamList
 	int size;
 };
 
-struct ParamNode *init_ParamNode(char *, int);
+struct ParamNode *init_ParamNode(char *, int, int);
 struct ParamList *init_ParamList();
-struct ParamList *ParamInsert(struct ParamList *, char *, int);
+struct ParamList *ParamInsert(struct ParamList *, char *, int, int);
 struct ParamList *ParamDelete(struct ParamList *h);
 void printParamList(struct ParamList *);
 int ParamGetSize(struct ParamList *);
@@ -73,6 +77,7 @@ int ParamGetSize(struct ParamList *);
 struct LSTNode
 {
 	int type;
+	int type_of_var;
 	char *varname;
 	int binding_addr;
 	struct LSTNode *next;
@@ -85,12 +90,12 @@ struct LSTable
 	int size;
 };
 
-struct LSTNode *init_LSTNode(int, char *, int);
+struct LSTNode *init_LSTNode(int, int, char *, int);
 struct LSTable *init_LSTable();
-struct LSTable *LSTInstall(struct LSTable *, char *, int);
+struct LSTable *LSTInstall(struct LSTable *, char *, int, int);
 struct LSTNode *LSTLookUp(struct LSTable *, char *);
 struct LSTable *LSTDelete(struct LSTable *);
-void printLSTable(struct LSTable *);
+void printLST(struct LSTable *);
 int LSTGetSize(struct LSTable *);
 //----------------------------------------------------------------------------------------------------------
 
@@ -139,12 +144,11 @@ struct AST_Node
 	int val;
 	char *s;
 	struct GSTNode *gst;
-	struct LSTable *lst;
 	struct AST_Node *left, *right;
 };
 
 //function declaration for Abstract Syntax Tree
-struct AST_Node *makeTreeNode(int, int, char *, int, int, struct AST_Node *, struct AST_Node *, struct GSTNode *, struct LSTable *, char *);
+struct AST_Node *makeTreeNode(int, int, char *, int, int, struct AST_Node *, struct AST_Node *, struct GSTNode *, char *);
 //for printing syntax tree
 void print_tree(struct AST_Node *);
 //----------------------------------------------------------------------------------------------------------
