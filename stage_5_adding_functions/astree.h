@@ -44,6 +44,8 @@
 #define NE 35
 #define EQ 36
 
+#define ARGUMENT 37
+
 int ADDR;
 int LABEL;
 int line;
@@ -179,21 +181,21 @@ reg_idx freeReg();
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------Code Generation Function-------------------------------------------------------
-reg_idx expression_code_generator(FILE *, struct AST_Node *, struct GSTNode *);
-int assignment_code_generator(FILE *, struct AST_Node *, struct GSTNode *);
-int read_code_generator(FILE *, struct AST_Node *, struct GSTNode *);
-int write_code_generator(FILE *, struct AST_Node *, struct GSTNode *);
-void boolean_code_generator(FILE *, struct AST_Node *, int, struct GSTNode *);
-void if_else_code_generator(FILE *, struct AST_Node *, int, int, struct GSTNode *);
-void while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTNode *);
+reg_idx expression_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+int assignment_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+int read_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+int write_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+void boolean_code_generator(FILE *, struct AST_Node *, int, struct GSTable *, struct LSTable *);
+void if_else_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
+void while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
 void break_code_generator(FILE *, struct AST_Node *, int, int);
 void continue_code_generator(FILE *, struct AST_Node *, int, int);
 void breakpoint_code_generator(FILE *, struct AST_Node *);
-void repeat_until_code_generator(FILE *, struct AST_Node *, int, int, struct GSTNode *);
-void do_while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTNode *);
-void code_generator_util(FILE *, struct AST_Node *, int, int, struct GSTNode *);
-void code_generator(FILE *, struct AST_Node *, struct GSTNode *);
-reg_idx getArrayNodeAddress(FILE *, struct AST_Node *, struct GSTNode *);
+void repeat_until_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
+void do_while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
+void code_generator_util(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
+void code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+reg_idx getArrayNodeAddress(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------------Evaluator Function-------------------------------------------------------

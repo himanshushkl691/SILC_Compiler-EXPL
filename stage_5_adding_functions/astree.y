@@ -26,7 +26,7 @@
 %type <node> _BREAK _CONTINUE _BREAKPOINT
 %type <node> GDeclBlock GDeclList GDecl GIdList GId
 %type <node> LDecl LDeclBlock LDeclList IdList Type
-%type <node> Param ParamList
+%type <node> Param ParamList ArgList
 %type <node> FnDef FnDefBlock MainBlock
 %type <node> Program
 %type <node> Body Slist stmt Inputstmt Outputstmt Assgstmt Ifstmt Whilestmt RepeatUntil DoWhile
@@ -73,12 +73,11 @@ MainBlock   :   _INT    _MAIN   '(' ')' '{' LDeclBlock  Body    '}' {
     temp1 = GSTLookUp(gst,"Main");
     temp1->lst = lst;
     lst = LSTDelete(lst);
-    Parserparam = ParamDelete(Parserparam);
     $$ = makeTreeNode(FUNCTION,INTEGER,"Main",-1,-1,$7,NULL,temp1,"Main");
     printGST(gst);
     print_tree($$);
     printf("\n");
-    //code_generator(ft,$$,gst,temp1->lst);
+    code_generator(ft,$$,gst,temp1->lst);
     $$ = ASTDelete($$);
 }
 ;
@@ -92,23 +91,26 @@ Body    :   _BEGIN  Slist   _END    {$$ = $2;}
 Program :   GDeclBlock   FnDefBlock   MainBlock {
     $$ = NULL;
     printf("Parsing Completed\n");
+    generateExit(ft);
     exit(1);
 }
 |   GDeclBlock  MainBlock   {
     $$ = NULL;
     printf("Parsing Completed\n");
+    generateExit(ft);
     exit(1);
 }
 |   MainBlock   {
     $$ = NULL;
     printf("Parsing Completed\n");
+    generateExit(ft);
     exit(1);
 }
 ;
 
 //-----------------------Global Declarations------------------
-GDeclBlock  :   _DECL   GDeclList   _ENDDECL    {}
-|   _DECL   _ENDDECL    {}
+GDeclBlock  :   _DECL   GDeclList   _ENDDECL    {generateHeader(ft);}
+|   _DECL   _ENDDECL    {generateHeader(ft);}
 ;
 GDeclList   :   GDeclList   GDecl   {}
 |   GDecl   {}
@@ -158,7 +160,7 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}' {
     printGST(gst);
     print_tree($$);
     printf("\n");
-    //code_generator(ft,$$,gst,temp1->lst);
+    code_generator(ft,$$,gst,temp1->lst);
     $$ = ASTDelete($$);
 }
 |   Type    _ID '(' ')' '{' LDeclBlock  Body    '}' {
@@ -182,7 +184,7 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}' {
     printGST(gst);
     print_tree($$);
     printf("\n");
-    //code_generator(ft,$$,gst,temp1->lst);
+    code_generator(ft,$$,gst,temp1->lst);
     $$ = ASTDelete($$);
 }
 ;
@@ -212,6 +214,16 @@ IdList  :   IdList  ',' _ID {
 }
 |   _ID {
     lst = LSTInstall(lst,$1->varname,TYPE,VARIABLE);
+}
+;
+
+//----------------------ArgList---------------------------
+ArgList :   ArgList ',' stringExp   {
+    $1->right = $3;
+    $$ = $1;
+}
+|   stringExp   {
+    $$ = $1;
 }
 ;
 
@@ -268,7 +280,7 @@ Outputstmt: _WRITE '(' stringExp ')' ';' {
     	$$ = makeTreeNode(STATEMENT,WRITE,NULL,-1,-1,$3,NULL,NULL,"Write");
 };
 Assgstmt:   id '=' stringExp ';'{
-    if((typeCheckExp($1) && typeCheckExp($3)) || (typeCheckStr($1) && typeCheckStr($3)))
+    if(((typeCheckExp($1) && typeCheckExp($3)) || (typeCheckStr($1) && typeCheckStr($3))) && ($1->nodetype != FUNCTION))
 	    $$ = makeTreeNode(STATEMENT,ASSIGNMENT,NULL,-1,-1,$1,$3,NULL,"=");
     else{
         printf("Invalid assignment to \"%s\"\n",$1->varname);
@@ -436,7 +448,7 @@ id: _ID {
     }
 }
 |   _ID '[' expr ']' {
-    if(typeCheckBool($3)){
+    if($3->type != INTEGER){
         printf("Invalid index\n");
         exit(1);
     }
@@ -465,6 +477,26 @@ id: _ID {
             $$ = makeTreeNode(ARRAY_VARIABLE,$1->type,$1->varname,-1,-1,$1,$3,temp1,"ARRAY_VARIABLE");
         }
     }
+}
+|   _ID '(' ArgList ')' {
+    temp1 = GSTLookUp(gst,$1->varname);
+    if(!temp1){
+        printf("Function \"%s\" not declared\n",$1->varname);
+        exit(1);
+    }
+    if(temp1->type_of_var != FUNCTION){
+        printf("\"%s\" not a function\n",$1->varname);
+        exit(1);
+    }
+    if(!checkASTParam(temp1->param,$3)){
+        printf("Wrong arguments in \"%s\", does not match with declaration\n",$1->varname);
+        exit(1);
+    }
+    $1->nodetype = FUNCTION;
+    $1->type = temp1->type;
+    $1->left = $3;
+    $3 = ASTDelete($3);
+    $$ = $1;
 }
 ;
 %%

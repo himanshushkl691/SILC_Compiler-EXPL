@@ -418,6 +418,23 @@ int checkParamList(struct ParamList *p1, struct ParamList *p2)
 	return 1;
 }
 
+int checkASTParam(struct ParamList *param, struct AST_Node *a)
+{
+	struct ParamNode *curr1 = param->head;
+	struct AST_Node *curr2 = a;
+	while (curr1 && curr2)
+	{
+		if (curr1->type != curr2->type)
+			return 0;
+		curr1 = curr1->next;
+		curr2 = curr2->right;
+	}
+	if (curr1 || curr2)
+		return 0;
+	else
+		return 1;
+}
+
 struct LSTable *ParamToLSTInstall(struct LSTable *l, struct ParamList *p)
 {
 	struct ParamNode *curr = p->head;
@@ -428,400 +445,444 @@ struct LSTable *ParamToLSTInstall(struct LSTable *l, struct ParamList *p)
 	}
 	return l;
 }
+
+reg_idx getAddress(FILE *ft, char *varname, struct GSTable *g, struct LSTable *l)
+{
+	struct GSTNode *curr1;
+	struct LSTNode *curr2;
+	curr2 = LSTLookUp(l, varname);
+	if (curr2)
+	{
+		reg_idx a = getReg();
+		fprintf(ft, "MOV R%d, BP\n", a);
+		fprintf(ft, "ADD R%d, %d\n", a, curr2->binding_addr);
+		return a;
+	}
+	else
+	{
+		curr1 = GSTLookUp(g, varname);
+		reg_idx a = getReg();
+		fprintf(ft, "MOV R%d, %d\n", a, curr1->binding_addr);
+		return a;
+	}
+}
+
+reg_idx getArrayNodeAddress(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
+{
+	struct GSTNode *curr = GSTLookUp(g, root->left->varname);
+	reg_idx temp0 = getReg();
+	fprintf(ft, "MOV R%d, %d\n", temp0, curr->binding_addr);
+	reg_idx temp1 = expression_code_generator(ft, root->right, g, l);
+	fprintf(ft, "ADD R%d, R%d\n", temp0, temp1);
+	temp1 = freeReg();
+	return temp0;
+}
 //-----------------------------------------------------------------------------------
 
-//-------------------------------Code Generation-------------------------------------
-// reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
-// {
-// 	if (root->nodetype == CONSTANT && root->type == INTEGER && root->oper == NULL)
-// 	{
-// 		reg_idx id = getReg();
-// 		fprintf(ft, "MOV R%d, %d\n", id, root->val);
-// 		return id;
-// 	}
-// 	if (root->nodetype == VARIABLE && root->type == INTEGER && root->varname != NULL)
-// 	{
-// 		int aRes = GSTgetAddr(head, root->varname);
-// 		reg_idx id = getReg();
-// 		fprintf(ft, "MOV R%d, [%d]\n", id, aRes);
-// 		return id;
-// 	}
-// 	if (root->nodetype == CONSTANT && root->type == STRING && root->oper == NULL)
-// 	{
-// 		reg_idx id = getReg();
-// 		fprintf(ft, "MOV R%d, %s\n", id, root->s);
-// 		return id;
-// 	}
-// 	if (root->nodetype == VARIABLE && root->type == STRING && root->varname != NULL)
-// 	{
-// 		int aRes = GSTgetAddr(head, root->varname);
-// 		reg_idx id = getReg();
-// 		fprintf(ft, "MOV R%d, [%d]\n", id, aRes);
-// 		return id;
-// 	}
-// 	if (root->nodetype == ARRAY_VARIABLE)
-// 	{
-// 		reg_idx id = getReg();
-// 		reg_idx aRes = GSTgetArrayNodeAddress(ft, root, head);
-// 		fprintf(ft, "MOV R%d, [R%d]\n", id, aRes);
-// 		aRes = freeReg();
-// 		return id;
-// 	}
-// 	else
-// 	{
-// 		reg_idx a = expression_code_generator(ft, root->left, head);
-// 		reg_idx b = expression_code_generator(ft, root->right, head);
-// 		reg_idx id;
-// 		switch (*(root->oper))
-// 		{
-// 		case '+':
-// 			fprintf(ft, "ADD R%d, R%d\n", a, b);
-// 			id = freeReg();
-// 			return a;
-// 			break;
-// 		case '-':
-// 			fprintf(ft, "SUB R%d, R%d\n", a, b);
-// 			id = freeReg();
-// 			return a;
-// 			break;
-// 		case '/':
-// 			fprintf(ft, "DIV R%d, R%d\n", a, b);
-// 			id = freeReg();
-// 			return a;
-// 			break;
-// 		case '*':
-// 			fprintf(ft, "MUL R%d, R%d\n", a, b);
-// 			id = freeReg();
-// 			return a;
-// 			break;
-// 		case '%':
-// 			fprintf(ft, "MOD R%d, R%d\n", a, b);
-// 			id = freeReg();
-// 			return a;
-// 			break;
-// 		}
-// 	}
-// }
+//-------------------------------Code Generation-- -----------------------------------
+reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
+{
+	if (root->nodetype == CONSTANT)
+	{
+		reg_idx id = getReg();
+		if (root->type == INTEGER)
+			fprintf(ft, "MOV R%d, %d\n", id, root->val);
+		else if (root->type == STRING)
+			fprintf(ft, "MOV R%d, %s\n", id, root->s);
+		return id;
+	}
+	else if (root->nodetype == VARIABLE && (root->type == INTEGER || root->type == STRING))
+	{
+		reg_idx id = getReg();
+		reg_idx aRes = getAddress(ft, root->varname, g, l);
+		fprintf(ft, "MOV R%d, [R%d]\n", id, aRes);
+		aRes = freeReg();
+		return id;
+	}
+	else if (root->nodetype == ARRAY_VARIABLE)
+	{
+		reg_idx id = getReg();
+		reg_idx aRes = getArrayNodeAddress(ft, root, g, l);
+		fprintf(ft, "MOV R%d, [R%d]\n", id, aRes);
+		aRes = freeReg();
+		return id;
+	}
+	else
+	{
+		reg_idx a = expression_code_generator(ft, root->left, g, l);
+		reg_idx b = expression_code_generator(ft, root->right, g, l);
+		reg_idx id;
+		switch (root->oper)
+		{
+		case PLUS:
+			fprintf(ft, "ADD R%d, R%d\n", a, b);
+			id = freeReg();
+			return a;
+			break;
+		case MINUS:
+			fprintf(ft, "SUB R%d, R%d\n", a, b);
+			id = freeReg();
+			return a;
+			break;
+		case DIV:
+			fprintf(ft, "DIV R%d, R%d\n", a, b);
+			id = freeReg();
+			return a;
+			break;
+		case MUL:
+			fprintf(ft, "MUL R%d, R%d\n", a, b);
+			id = freeReg();
+			return a;
+			break;
+		case MOD:
+			fprintf(ft, "MOD R%d, R%d\n", a, b);
+			id = freeReg();
+			return a;
+			break;
+		}
+	}
+}
 
-// reg_idx GSTgetArrayNodeAddress(FILE *ft, struct AST_Node *root, struct GSTNode *head)
-// {
-// 	struct GSTNode *curr = GSTLookUp(head, root->left->varname);
-// 	if (!curr)
-// 		exit(1);
-// 	reg_idx temp0 = getReg();
-// 	fprintf(ft, "MOV R%d, %d\n", temp0, curr->binding_addr);
-// 	reg_idx temp1 = expression_code_generator(ft, root->right, head);
-// 	fprintf(ft, "ADD R%d, R%d\n", temp0, temp1);
-// 	temp1 = freeReg();
-// 	return temp0;
-// }
+int assignment_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
+{
+	if (root && root->left && root->right)
+	{
+		reg_idx id = expression_code_generator(ft, root->right, g, l);
+		if (root->left->nodetype == VARIABLE)
+		{
+			reg_idx aRes = getAddress(ft, root->left->varname, g, l);
+			fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
+			aRes = freeReg();
+		}
+		else if (root->left->nodetype == ARRAY_VARIABLE)
+		{
+			reg_idx aRes = getArrayNodeAddress(ft, root->left, g, l);
+			fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
+			aRes = freeReg();
+		}
+		id = freeReg();
+		return 1;
+	}
+	printf("Improper Assignment Node\n");
+	exit(1);
+	return -1;
+}
 
-// int assignment_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
-// {
-// 	if (root && root->left && root->right)
-// 	{
-// 		reg_idx id = expression_code_generator(ft, root->right, head);
-// 		int aRes = -1;
-// 		if (root->left->nodetype == VARIABLE)
-// 		{
-// 			aRes = GSTgetAddr(head, root->left->varname);
-// 			fprintf(ft, "MOV [%d], R%d\n", aRes, id);
-// 		}
-// 		else if (root->left->nodetype == ARRAY_VARIABLE)
-// 		{
-// 			aRes = GSTgetArrayNodeAddress(ft, root->left, head);
-// 			fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
-// 			aRes = freeReg();
-// 		}
-// 		id = freeReg();
-// 		return 1;
-// 	}
-// 	printf("Improper Assignment Node\n");
-// 	exit(1);
-// 	return -1;
-// }
+int write_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
+{
+	if (root && root->left)
+	{
+		reg_idx id = expression_code_generator(ft, root->left, g, l);
+		reg_idx temp = getReg();
+		fprintf(ft, "MOV R%d, \"Write\"\n", temp);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "MOV R%d, -2\n", temp);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "PUSH R%d\n", id);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "CALL 0\n");
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		id = freeReg();
+		id = freeReg();
+		return 1;
+	}
+	printf("Improper Writing Node\n");
+	return -1;
+}
 
-// int write_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
-// {
-// 	if (root && root->left)
-// 	{
-// 		reg_idx id = expression_code_generator(ft, root->left, head);
-// 		reg_idx temp = getReg();
-// 		fprintf(ft, "MOV R%d, \"Write\"\n", temp);
-// 		fprintf(ft, "PUSH R%d\n", temp);
-// 		fprintf(ft, "MOV R%d, -2\n", temp);
-// 		fprintf(ft, "PUSH R%d\n", temp);
-// 		fprintf(ft, "PUSH R%d\n", id);
-// 		fprintf(ft, "PUSH R%d\n", temp);
-// 		fprintf(ft, "PUSH R%d\n", temp);
-// 		fprintf(ft, "CALL 0\n");
-// 		fprintf(ft, "POP R%d\n", temp);
-// 		fprintf(ft, "POP R%d\n", temp);
-// 		fprintf(ft, "POP R%d\n", temp);
-// 		fprintf(ft, "POP R%d\n", temp);
-// 		fprintf(ft, "POP R%d\n", temp);
-// 		id = freeReg();
-// 		id = freeReg();
-// 		return 1;
-// 	}
-// 	printf("Improper Writing Node\n");
-// 	return -1;
-// }
+int read_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
+{
+	if (root && root->left)
+	{
+		reg_idx id = getReg();
+		if (root->left->nodetype == VARIABLE)
+		{
+			reg_idx aRes = getAddress(ft, root->left->varname, g, l);
+			fprintf(ft, "MOV R%d, R%d\n", id, aRes);
+			aRes = freeReg();
+		}
+		else if (root->left->nodetype == ARRAY_VARIABLE)
+		{
+			reg_idx aRes = getArrayNodeAddress(ft, root->left, g, l);
+			fprintf(ft, "MOV R%d, R%d\n", id, aRes);
+			aRes = freeReg();
+		}
+		reg_idx temp = getReg();
+		fprintf(ft, "MOV R%d, \"Read\"\n", temp);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "MOV R%d, -1\n", temp);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "PUSH R%d\n", id);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "PUSH R%d\n", temp);
+		fprintf(ft, "CALL 0\n");
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		fprintf(ft, "POP R%d\n", temp);
+		temp = freeReg();
+		id = freeReg();
+	}
+	return 1;
+}
 
-// int read_code_generator(FILE *ft, struct AST_Node *root, struct GSTNode *head)
-// {
-// 	if (root && root->left)
-// 	{
-// 		int aRes = -1;
-// 		reg_idx id = getReg();
-// 		if (root->left->nodetype == VARIABLE)
-// 		{
-// 			aRes = GSTgetAddr(head, root->left->varname);
-// 			fprintf(ft, "MOV R%d, %d\n", id, aRes);
-// 		}
-// 		else if (root->left->nodetype == ARRAY_VARIABLE)
-// 		{
-// 			aRes = GSTgetArrayNodeAddress(ft, root->left, head);
-// 			fprintf(ft, "MOV R%d, R%d\n", id, aRes);
-// 			aRes = freeReg();
-// 		}
-// 		reg_idx temp = getReg();
-// 		fprintf(ft, "MOV R%d, \"Read\"\n", temp);
-// 		fprintf(ft, "PUSH R%d\n", temp);
-// 		fprintf(ft, "MOV R%d, -1\n", temp);
-// 		fprintf(ft, "PUSH R%d\n", temp);
-// 		fprintf(ft, "PUSH R%d\n", id);
-// 		fprintf(ft, "PUSH R%d\n", temp);
-// 		fprintf(ft, "PUSH R%d\n", temp);
-// 		fprintf(ft, "CALL 0\n");
-// 		fprintf(ft, "POP R%d\n", temp);
-// 		fprintf(ft, "POP R%d\n", temp);
-// 		fprintf(ft, "POP R%d\n", temp);
-// 		fprintf(ft, "POP R%d\n", temp);
-// 		fprintf(ft, "POP R%d\n", temp);
-// 		temp = freeReg();
-// 		id = freeReg();
-// 	}
-// 	return 1;
-// }
+void boolean_code_generator(FILE *ft, struct AST_Node *root, int label, struct GSTable *g, struct LSTable *l)
+{
+	if (root && root->left && root->right)
+	{
+		reg_idx a = expression_code_generator(ft, root->left, g, l);
+		reg_idx b = expression_code_generator(ft, root->right, g, l);
+		switch (root->oper)
+		{
+		case LT:
+			fprintf(ft, "LT R%d, R%d\n", a, b);
+			break;
+		case LE:
+			fprintf(ft, "LE R%d, R%d\n", a, b);
+			break;
+		case GT:
+			fprintf(ft, "GT R%d, R%d\n", a, b);
+			break;
+		case GE:
+			fprintf(ft, "GE R%d, R%d\n", a, b);
+			break;
+		case EQ:
+			fprintf(ft, "EQ R%d, R%d\n", a, b);
+			break;
+		case NE:
+			fprintf(ft, "NE R%d, R%d\n", a, b);
+			break;
+		}
+		reg_idx temp = freeReg();
+		fprintf(ft, "JZ R%d, _L%d\n", a, label);
+		temp = freeReg();
+		return;
+	}
+	printf("Invalid boolean node\n");
+	exit(1);
+}
 
-// void boolean_code_generator(FILE *ft, struct AST_Node *root, int label, struct GSTNode *head)
-// {
-// 	if (root && root->left && root->right)
-// 	{
-// 		reg_idx a = expression_code_generator(ft, root->left, head);
-// 		reg_idx b = expression_code_generator(ft, root->right, head);
-// 		switch (root->type)
-// 		{
-// 		case LT:
-// 			fprintf(ft, "LT R%d, R%d\n", a, b);
-// 			break;
-// 		case LE:
-// 			fprintf(ft, "LE R%d, R%d\n", a, b);
-// 			break;
-// 		case GT:
-// 			fprintf(ft, "GT R%d, R%d\n", a, b);
-// 			break;
-// 		case GE:
-// 			fprintf(ft, "GE R%d, R%d\n", a, b);
-// 			break;
-// 		case EQ:
-// 			fprintf(ft, "EQ R%d, R%d\n", a, b);
-// 			break;
-// 		case NE:
-// 			fprintf(ft, "NE R%d, R%d\n", a, b);
-// 			break;
-// 		}
-// 		reg_idx temp = freeReg();
-// 		fprintf(ft, "JZ R%d, _L%d\n", a, label);
-// 		temp = freeReg();
-// 		return;
-// 	}
-// 	printf("Invalid boolean node\n");
-// 	exit(1);
-// }
+void if_else_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTable *g, struct LSTable *l)
+{
+	if (root)
+	{
+		if (root->left)
+		{
+			int first_label = getLabel();
+			int second_label = getLabel();
+			if (root->left->left)
+				boolean_code_generator(ft, root->left->left, first_label, g, l);
+			if (root->left->right)
+				code_generator_util(ft, root->left->right, blabel, clabel, g, l);
+			fprintf(ft, "JMP _L%d\n", second_label);
+			fprintf(ft, "_L%d:\n", first_label);
+			if (root->right)
+				code_generator_util(ft, root->right, blabel, clabel, g, l);
+			fprintf(ft, "_L%d:\n", second_label);
+		}
+		return;
+	}
+	printf("Invalid IF_ELSE node\n");
+	return;
+}
 
-// void if_else_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTNode *head)
-// {
-// 	if (root)
-// 	{
-// 		if (root->left)
-// 		{
-// 			int first_label = getLabel();
-// 			int second_label = getLabel();
-// 			if (root->left->left)
-// 				boolean_code_generator(ft, root->left->left, first_label, head);
-// 			if (root->left->right)
-// 				code_generator_util(ft, root->left->right, blabel, clabel, head);
-// 			fprintf(ft, "JMP _L%d\n", second_label);
-// 			fprintf(ft, "_L%d:\n", first_label);
-// 			if (root->right)
-// 				code_generator_util(ft, root->right, blabel, clabel, head);
-// 			fprintf(ft, "_L%d:\n", second_label);
-// 		}
-// 		return;
-// 	}
-// 	printf("Invalid IF_ELSE node\n");
-// 	return;
-// }
+void while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTable *g, struct LSTable *l)
+{
+	if (root)
+	{
+		if (root->left)
+		{
+			int first_label = getLabel();
+			int second_label = getLabel();
+			fprintf(ft, "_L%d:\n", first_label);
+			boolean_code_generator(ft, root->left, second_label, g, l);
+			if (root->right)
+				code_generator_util(ft, root->right, second_label, first_label, g, l);
+			fprintf(ft, "JMP _L%d\n", first_label);
+			fprintf(ft, "_L%d:\n", second_label);
+		}
+		return;
+	}
+	printf("Invalid WHILE node\n");
+	return;
+}
 
-// void while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTNode *head)
-// {
-// 	if (root)
-// 	{
-// 		if (root->left)
-// 		{
-// 			int first_label = getLabel();
-// 			int second_label = getLabel();
-// 			fprintf(ft, "_L%d:\n", first_label);
-// 			boolean_code_generator(ft, root->left, second_label, head);
-// 			if (root->right)
-// 				code_generator_util(ft, root->right, second_label, first_label, head);
-// 			fprintf(ft, "JMP _L%d\n", first_label);
-// 			fprintf(ft, "_L%d:\n", second_label);
-// 		}
-// 		return;
-// 	}
-// 	printf("Invalid WHILE node\n");
-// 	return;
-// }
+void do_while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTable *g, struct LSTable *l)
+{
+	if (root)
+	{
+		if (root->right)
+		{
+			int first_label = getLabel();
+			int second_label = getLabel();
+			fprintf(ft, "_L%d:\n", first_label);
+			if (root->left)
+				code_generator_util(ft, root->left, second_label, first_label, g, l);
+			boolean_code_generator(ft, root->right, second_label, g, l);
+			fprintf(ft, "JMP _L%d\n", first_label);
+			fprintf(ft, "_L%d:\n", second_label);
+		}
+		return;
+	}
+	printf("Invalid DO_WHILE node\n");
+	return;
+}
 
-// void do_while_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTNode *head)
-// {
-// 	if (root)
-// 	{
-// 		if (root->right)
-// 		{
-// 			int first_label = getLabel();
-// 			int second_label = getLabel();
-// 			fprintf(ft, "_L%d:\n", first_label);
-// 			if (root->left)
-// 				code_generator_util(ft, root->left, second_label, first_label, head);
-// 			boolean_code_generator(ft, root->right, second_label, head);
-// 			fprintf(ft, "JMP _L%d\n", first_label);
-// 			fprintf(ft, "_L%d:\n", second_label);
-// 		}
-// 		return;
-// 	}
-// 	printf("Invalid DO_WHILE node\n");
-// 	return;
-// }
+void repeat_until_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTable *g, struct LSTable *l)
+{
+	if (root)
+	{
+		if (root->right)
+		{
+			int first_label = getLabel();
+			int second_label = getLabel();
+			fprintf(ft, "_L%d:\n", first_label);
+			if (root->left)
+				code_generator_util(ft, root->left, second_label, first_label, g, l);
+			boolean_code_generator(ft, root->right, first_label, g, l);
+			fprintf(ft, "_L%d:\n", second_label);
+		}
+		return;
+	}
+	printf("Invalid REPEAT_UNTIL node\n");
+	return;
+}
 
-// void repeat_until_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTNode *head)
-// {
-// 	if (root)
-// 	{
-// 		if (root->right)
-// 		{
-// 			int first_label = getLabel();
-// 			int second_label = getLabel();
-// 			fprintf(ft, "_L%d:\n", first_label);
-// 			if (root->left)
-// 				code_generator_util(ft, root->left, second_label, first_label, head);
-// 			boolean_code_generator(ft, root->right, first_label, head);
-// 			fprintf(ft, "_L%d:\n", second_label);
-// 		}
-// 		return;
-// 	}
-// 	printf("Invalid REPEAT_UNTIL node\n");
-// 	return;
-// }
+void break_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+{
+	if (blabel == -1)
+		return;
+	fprintf(ft, "JMP _L%d\n", blabel);
+	return;
+}
 
-// void break_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
-// {
-// 	if (blabel == -1)
-// 		return;
-// 	fprintf(ft, "JMP _L%d\n", blabel);
-// 	return;
-// }
+void continue_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
+{
+	if (clabel == -1)
+		return;
+	fprintf(ft, "JMP _L%d\n", clabel);
+	return;
+}
 
-// void continue_code_generator(FILE *ft, struct AST_Node *root, int blabel, int clabel)
-// {
-// 	if (clabel == -1)
-// 		return;
-// 	fprintf(ft, "JMP _L%d\n", clabel);
-// 	return;
-// }
+void breakpoint_code_generator(FILE *ft, struct AST_Node *root)
+{
+	fprintf(ft, "BRKP\n");
+	return;
+}
 
-// void breakpoint_code_generator(FILE *ft, struct AST_Node *root)
-// {
-// 	fprintf(ft, "BRKP\n");
-// 	return;
-// }
+void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTable *g, struct LSTable *l)
+{
+	if (root)
+	{
+		//for assignment statement
+		if (root->nodetype == STATEMENT && root->type == ASSIGNMENT)
+		{
+			assignment_code_generator(ft, root, g, l);
+			return;
+		}
+		//for read statement
+		else if (root->nodetype == STATEMENT && root->type == READ)
+		{
+			read_code_generator(ft, root, g, l);
+			return;
+		}
+		//for write statement
+		else if (root->nodetype == STATEMENT && root->type == WRITE)
+		{
+			write_code_generator(ft, root, g, l);
+			return;
+		}
+		//for if else statement construct
+		else if (root->nodetype == STATEMENT && root->type == IF_ELSE)
+		{
+			if_else_code_generator(ft, root, blabel, clabel, g, l);
+			return;
+		}
+		//for while loop construct
+		else if (root->nodetype == LOOP && root->type == WHILE)
+		{
+			while_code_generator(ft, root, blabel, clabel, g, l);
+			return;
+		}
+		//for do while loop construct
+		else if (root->nodetype == LOOP && root->type == DO_WHILE)
+		{
+			do_while_code_generator(ft, root, blabel, clabel, g, l);
+			return;
+		}
+		//for repeat-until loop construct
+		else if (root->nodetype == LOOP && root->type == REPEAT_UNTIL)
+		{
+			repeat_until_code_generator(ft, root, blabel, clabel, g, l);
+			return;
+		}
+		//for break statement
+		else if (root->nodetype == BREAK)
+		{
+			break_code_generator(ft, root, blabel, clabel);
+			return;
+		}
+		//for continue statement
+		else if (root->nodetype == CONTINUE)
+		{
+			continue_code_generator(ft, root, blabel, clabel);
+			return;
+		}
+		//for breakpoint statement
+		else if (root->nodetype == BREAKPOINT)
+		{
+			breakpoint_code_generator(ft, root);
+			return;
+		}
+		code_generator_util(ft, root->left, blabel, clabel, g, l);
+		code_generator_util(ft, root->right, blabel, clabel, g, l);
+	}
+	return;
+}
 
-// void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTNode *head)
-// {
-// 	if (root)
-// 	{
-// 		if (root->nodetype == EXPRESSION && root->type == ASSIGNMENT)
-// 		{
-// 			assignment_code_generator(ft, root, head);
-// 			return;
-// 		}
-// 		if (root->nodetype == STATEMENT && root->type == READ)
-// 		{
-// 			read_code_generator(ft, root, head);
-// 			return;
-// 		}
-// 		if (root->nodetype == STATEMENT && root->type == WRITE)
-// 		{
-// 			write_code_generator(ft, root, head);
-// 			return;
-// 		}
-// 		if (root->nodetype == STATEMENT && root->type == IF_ELSE)
-// 		{
-// 			if_else_code_generator(ft, root, blabel, clabel, head);
-// 			return;
-// 		}
-// 		if (root->nodetype == LOOP && root->type == WHILE)
-// 		{
-// 			while_code_generator(ft, root, blabel, clabel, head);
-// 			return;
-// 		}
-// 		if (root->nodetype == LOOP && root->type == DO_WHILE)
-// 		{
-// 			do_while_code_generator(ft, root, blabel, clabel, head);
-// 			return;
-// 		}
-// 		if (root->nodetype == LOOP && root->type == REPEAT_UNTIL)
-// 		{
-// 			repeat_until_code_generator(ft, root, blabel, clabel, head);
-// 			return;
-// 		}
-// 		if (root->nodetype == BREAK)
-// 		{
-// 			break_code_generator(ft, root, blabel, clabel);
-// 			return;
-// 		}
-// 		if (root->nodetype == CONTINUE)
-// 		{
-// 			continue_code_generator(ft, root, blabel, clabel);
-// 			return;
-// 		}
-// 		if (root->nodetype == BREAKPOINT)
-// 		{
-// 			breakpoint_code_generator(ft, root);
-// 			return;
-// 		}
-// 		code_generator_util(ft, root->left, blabel, clabel, head);
-// 		code_generator_util(ft, root->right, blabel, clabel, head);
-// 	}
-// 	return;
-// }
+void generateHeader(FILE *ft)
+{
+	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
+	fprintf(ft, "MOV SP, %d\n", ADDR - 1);
+	return;
+}
 
-// void code_generator(FILE *ft, struct AST_Node *root,struct GSTable *g,struct LSTable *l)
-// {
-// 	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
-// 	fprintf(ft, "MOV SP, %d\n", ADDR - 1);
-// 	code_generator_util(ft, root, -1, -1, head);
-// 	reg_idx temp = getReg();
-// 	fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
-// 	fprintf(ft, "PUSH R%d\n", temp);
-// 	fprintf(ft, "PUSH R%d\n", temp);
-// 	fprintf(ft, "PUSH R%d\n", temp);
-// 	fprintf(ft, "PUSH R%d\n", temp);
-// 	fprintf(ft, "PUSH R%d\n", temp);
-// 	fprintf(ft, "CALL 0\n");
-// 	fclose(ft);
-// }
-// //-----------------------------------------------------------------------------------
+void generateExit(FILE *ft)
+{
+	reg_idx temp = getReg();
+	fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
+	fprintf(ft, "PUSH R%d\n", temp);
+	fprintf(ft, "PUSH R%d\n", temp);
+	fprintf(ft, "PUSH R%d\n", temp);
+	fprintf(ft, "PUSH R%d\n", temp);
+	fprintf(ft, "PUSH R%d\n", temp);
+	fprintf(ft, "CALL 0\n");
+	temp = freeReg();
+	return;
+}
+
+void code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
+{
+	//fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
+	//fprintf(ft, "MOV SP, %d\n", ADDR - 1);
+	struct GSTNode *curr = GSTLookUp(g, root->varname);
+	fprintf(ft, "_L%d:\n", curr->binding_addr);
+	code_generator_util(ft, root->left, -1, -1, g, l);
+	fprintf(ft, "RET\n");
+	// reg_idx temp = getReg();
+	// fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
+	// fprintf(ft, "PUSH R%d\n", temp);
+	// fprintf(ft, "PUSH R%d\n", temp);
+	// fprintf(ft, "PUSH R%d\n", temp);
+	// fprintf(ft, "PUSH R%d\n", temp);
+	// fprintf(ft, "PUSH R%d\n", temp);
+	// fprintf(ft, "CALL 0\n");
+	// temp = freeReg();
+}
+//-----------------------------------------------------------------------------------

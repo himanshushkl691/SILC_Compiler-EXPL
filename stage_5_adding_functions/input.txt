@@ -1,7 +1,7 @@
 decl
-	int a,b,f(int a,int b);
+	int a,b,f1(int a,int b),arr[10],crr;
 enddecl
-int f(int a,int b)
+int f1(int a,int b)
 {
 	decl
 	enddecl
@@ -12,11 +12,10 @@ int f(int a,int b)
 int main()
 {
 	decl
-		int a,b;
+		int a_m,b_m;
+		str s;
 	enddecl
 	begin
-		while(a < b) do
-			a = a + 1;
-		endwhile;
+		write("hello");
 	end
 }
