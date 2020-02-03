@@ -1,12 +1,23 @@
 decl
-	int a,b,f1(int a,int b),arr[10],crr;
+	int a,b,f1(int a,int b),arr[10],f2(int a);
 enddecl
+int f2(int a)
+{
+	decl
+		int z,x,y;
+	enddecl
+	begin
+		write(z);
+	end
+}
+
 int f1(int a,int b)
 {
 	decl
+		int fact;
 	enddecl
 	begin
-		write(a);
+		fact = 2;
 	end
 }
 int main()
@@ -16,6 +27,6 @@ int main()
 		str s;
 	enddecl
 	begin
-		write("hello");
+		a_m = f1(a_m,f1(b_m,b_m));
 	end
 }

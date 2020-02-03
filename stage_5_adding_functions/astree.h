@@ -51,6 +51,28 @@ int LABEL;
 int line;
 int TYPE;
 
+//---------------------------------------CodeGen Stack-------------------------------
+struct StackNode
+{
+	struct AST_Node *ast;
+	struct LSTable *lst;
+	struct StackNode *next;
+};
+
+struct Stack
+{
+	struct StackNode *head;
+	int size;
+};
+
+struct StackNode *init_StackNode(struct AST_Node *, struct LSTable *);
+struct Stack *init_Stack();
+struct Stack *push(struct Stack *, struct AST_Node *, struct LSTable *);
+struct Stack *pop(struct Stack *);
+struct StackNode *top(struct Stack *);
+int StackGetSize(struct Stack *);
+//-------------------------------------------------------------------------------
+
 //-----------------------------------------Parameter Linked List-------------------------------------------
 struct ParamNode
 {
@@ -146,13 +168,21 @@ struct AST_Node
 	int val;
 	char *s;
 	struct GSTNode *gst;
+	struct AST_Node *param;
+	struct AST_Node *next_param;
 	struct AST_Node *left, *right;
 };
 
 //function declaration for Abstract Syntax Tree
 struct AST_Node *makeTreeNode(int, int, char *, int, int, struct AST_Node *, struct AST_Node *, struct GSTNode *, char *);
 //for printing syntax tree
-void print_tree(struct AST_Node *);
+void ASTPrintTree(struct AST_Node *);
+//for printing argument list attached to function call node
+void ASTPrintParam(struct AST_Node *);
+//for deleting argument list attached to function call node in syntax tree
+struct AST_Node *ASTDeleteParam(struct AST_Node *);
+//for deleting syntax tree
+struct AST_Node *ASTDelete(struct AST_Node *);
 //----------------------------------------------------------------------------------------------------------
 
 //-----------------------------------Auxiliary Function----------------------------------------
@@ -191,6 +221,7 @@ void while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *,
 void break_code_generator(FILE *, struct AST_Node *, int, int);
 void continue_code_generator(FILE *, struct AST_Node *, int, int);
 void breakpoint_code_generator(FILE *, struct AST_Node *);
+reg_idx functionCall_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
 void repeat_until_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
 void do_while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
 void code_generator_util(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);

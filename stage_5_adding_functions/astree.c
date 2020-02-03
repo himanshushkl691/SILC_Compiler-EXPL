@@ -1,3 +1,4 @@
+//#include "astree.h"
 //-------------------------Static Storage Allocation----------------------------------
 int allocate(int size)
 {
@@ -311,9 +312,22 @@ struct AST_Node *makeTreeNode(int nodetype, int type, char *varname, int oper, i
 	newn->s = (char *)malloc(strlen(s) * sizeof(char));
 	newn->s = strdup(s);
 	newn->gst = gst;
+	newn->param = NULL;
+	newn->next_param = NULL;
 	newn->left = l;
 	newn->right = r;
 	return newn;
+}
+
+struct AST_Node *ASTDeleteParam(struct AST_Node *root)
+{
+	if (root)
+	{
+		struct AST_Node *temp = root->next_param;
+		ASTDelete(root);
+		ASTDeleteParam(temp);
+	}
+	return NULL;
 }
 
 struct AST_Node *ASTDelete(struct AST_Node *root)
@@ -322,19 +336,32 @@ struct AST_Node *ASTDelete(struct AST_Node *root)
 	{
 		ASTDelete(root->left);
 		ASTDelete(root->right);
+		if (root->nodetype == FUNCTION)
+			ASTDeleteParam(root->param);
 		root = NULL;
 		free(root);
 	}
 	return NULL;
 }
 
-void print_tree(struct AST_Node *root)
+void ASTPrintParam(struct AST_Node *root)
 {
 	if (root)
 	{
-		print_tree(root->left);
+		ASTPrintTree(root);
+		ASTPrintParam(root->next_param);
+	}
+}
+
+void ASTPrintTree(struct AST_Node *root)
+{
+	if (root)
+	{
+		ASTPrintTree(root->left);
 		printf("%s ", root->s);
-		print_tree(root->right);
+		if (root->nodetype == FUNCTION)
+			ASTPrintParam(root->param);
+		ASTPrintTree(root->right);
 	}
 }
 //----------------------------------------------------------------------------------------------------------
@@ -427,7 +454,7 @@ int checkASTParam(struct ParamList *param, struct AST_Node *a)
 		if (curr1->type != curr2->type)
 			return 0;
 		curr1 = curr1->next;
-		curr2 = curr2->right;
+		curr2 = curr2->next_param;
 	}
 	if (curr1 || curr2)
 		return 0;
@@ -438,9 +465,12 @@ int checkASTParam(struct ParamList *param, struct AST_Node *a)
 struct LSTable *ParamToLSTInstall(struct LSTable *l, struct ParamList *p)
 {
 	struct ParamNode *curr = p->head;
+	int i = -3;
 	while (curr)
 	{
 		l = LSTInstall(l, curr->varname, curr->type, curr->type_of_var);
+		l->tail->binding_addr = i;
+		i--;
 		curr = curr->next;
 	}
 	return l;
@@ -477,7 +507,79 @@ reg_idx getArrayNodeAddress(FILE *ft, struct AST_Node *root, struct GSTable *g, 
 	temp1 = freeReg();
 	return temp0;
 }
+
+int getFunctionLabel(struct GSTable *gst, char *fname)
+{
+	return (GSTLookUp(gst, fname)->binding_addr);
+}
+
+void PushArgument(FILE *ft, struct AST_Node *root, struct GSTable *gst, struct LSTable *lst)
+{
+	if (root)
+	{
+		PushArgument(ft, root->next_param, gst, lst);
+		reg_idx z = expression_code_generator(ft, root, gst, lst);
+		fprintf(ft, "PUSH R%d\n", z);
+		z = freeReg();
+	}
+}
 //-----------------------------------------------------------------------------------
+
+//---------------------------------------CodeGen Stack-------------------------------
+struct StackNode *init_StackNode(struct AST_Node *ast, struct LSTable *lst)
+{
+	struct StackNode *newn = (struct StackNode *)malloc(sizeof(struct StackNode));
+	newn->ast = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+	*(newn->ast) = *(ast);
+	newn->lst = (struct LSTable *)malloc(sizeof(struct LSTable));
+	*(newn->lst) = *(lst);
+	newn->next = NULL;
+	return newn;
+}
+
+struct Stack *init_Stack()
+{
+	struct Stack *newn = (struct Stack *)malloc(sizeof(struct Stack));
+	newn->head = NULL;
+	newn->size = 0;
+	return newn;
+}
+
+struct Stack *push(struct Stack *stack, struct AST_Node *ast, struct LSTable *lst)
+{
+	if (stack->head == NULL)
+		stack->head = init_StackNode(ast, lst);
+	else
+	{
+		struct StackNode *temp = init_StackNode(ast, lst);
+		temp->next = stack->head;
+		stack->head = temp;
+	}
+	stack->size++;
+	return stack;
+}
+
+struct Stack *pop(struct Stack *stack)
+{
+	struct StackNode *temp = stack->head;
+	stack->head = temp->next;
+	stack->size--;
+	return stack;
+}
+
+struct StackNode *top(struct Stack *stack)
+{
+	return (stack->head);
+}
+
+int StackGetSize(struct Stack *s)
+{
+	if (s)
+		return s->size;
+	else
+		return 0;
+}
+//-------------------------------------------------------------------------------
 
 //-------------------------------Code Generation-- -----------------------------------
 reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
@@ -507,6 +609,8 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTabl
 		aRes = freeReg();
 		return id;
 	}
+	else if (root->nodetype == FUNCTION)
+		return functionCall_code_generator(ft, root, g, l);
 	else
 	{
 		reg_idx a = expression_code_generator(ft, root->left, g, l);
@@ -776,6 +880,47 @@ void breakpoint_code_generator(FILE *ft, struct AST_Node *root)
 	return;
 }
 
+reg_idx functionCall_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *gst, struct LSTable *lst)
+{
+	int cnt = 0;
+	for (int i = 0; i < 20; i++)
+	{
+		if (reg_pool[i])
+		{
+			cnt++;
+			fprintf(ft, "PUSH R%d\n", i);
+			freeReg();
+		}
+	}
+	PushArgument(ft, root->param, gst, lst);
+	reg_idx z = getReg();
+	fprintf(ft, "PUSH R%d\n", z);
+	z = freeReg();
+	struct GSTNode *curr = GSTLookUp(gst, root->varname);
+	fprintf(ft, "CALL _F%d\n", curr->binding_addr);
+	int temp = cnt;
+	while (temp--)
+		getReg();
+	z = getReg();
+	temp = ParamGetSize(curr->param) + 1;
+	int i = 0;
+	reg_idx t = getReg();
+	while (temp--)
+	{
+		if (i == 0)
+		{
+			fprintf(ft, "POP R%d\n", z);
+			i = 1;
+		}
+		else
+			fprintf(ft, "POP R%d\n", t);
+	}
+	t = freeReg();
+	for (int i = cnt - 1; i >= 0; i--)
+		fprintf(ft, "POP R%d\n", i);
+	return z;
+}
+
 void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTable *g, struct LSTable *l)
 {
 	if (root)
@@ -872,9 +1017,10 @@ void code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct L
 	//fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
 	//fprintf(ft, "MOV SP, %d\n", ADDR - 1);
 	struct GSTNode *curr = GSTLookUp(g, root->varname);
-	fprintf(ft, "_L%d:\n", curr->binding_addr);
+	fprintf(ft, "_F%d:\n", curr->binding_addr);
+	fprintf(ft, "PUSH BP\nMOV BP, SP\n");
+	fprintf(ft, "ADD SP, %d\n", LSTGetSize(l) - ParamGetSize(curr->param));
 	code_generator_util(ft, root->left, -1, -1, g, l);
-	fprintf(ft, "RET\n");
 	// reg_idx temp = getReg();
 	// fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
 	// fprintf(ft, "PUSH R%d\n", temp);

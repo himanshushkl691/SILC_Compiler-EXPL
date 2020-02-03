@@ -14,6 +14,8 @@
     struct LSTNode *temp3;
     struct ParamList *Parserparam;
     struct AST_Node *temp2;
+    struct Stack *stack;
+    struct StackNode *tstack;
     char *keyword[20] = {"begin", "end", "read", "write", "if", "else", "then", "endif", "while", "do", "endwhile", "repeat", "until", "int", "str", "decl", "enddecl", "break", "continue", "breakpoint"};
 
 %}
@@ -69,15 +71,16 @@
 
 //------------------------MainBlock---------------------------
 MainBlock   :   _INT    _MAIN   '(' ')' '{' LDeclBlock  Body    '}' {
-    gst = GSTInstall(gst,INTEGER,FUNCTION,"Main",1,NULL,NULL);
-    temp1 = GSTLookUp(gst,"Main");
+    gst = GSTInstall(gst,INTEGER,FUNCTION,"main",1,NULL,NULL);
+    temp1 = GSTLookUp(gst,"main");
     temp1->lst = lst;
     lst = LSTDelete(lst);
-    $$ = makeTreeNode(FUNCTION,INTEGER,"Main",-1,-1,$7,NULL,temp1,"Main");
+    $$ = makeTreeNode(FUNCTION,INTEGER,"main",-1,-1,$7,NULL,temp1,"main");
     printGST(gst);
-    print_tree($$);
+    ASTPrintTree($$);
     printf("\n");
-    code_generator(ft,$$,gst,temp1->lst);
+    stack = push(stack,$$,temp1->lst);
+    //code_generator(ft,$$,gst,temp1->lst);
     $$ = ASTDelete($$);
 }
 ;
@@ -91,26 +94,56 @@ Body    :   _BEGIN  Slist   _END    {$$ = $2;}
 Program :   GDeclBlock   FnDefBlock   MainBlock {
     $$ = NULL;
     printf("Parsing Completed\n");
-    generateExit(ft);
+    generateHeader(ft);
+    int i = 0;
+    while(StackGetSize(stack)){
+        tstack = top(stack);
+        stack = pop(stack);
+        code_generator(ft,tstack->ast,gst,tstack->lst);
+        if(i == 0){
+            generateExit(ft);
+            i = 1;
+        }
+    }
     exit(1);
 }
 |   GDeclBlock  MainBlock   {
     $$ = NULL;
     printf("Parsing Completed\n");
-    generateExit(ft);
+    generateHeader(ft);
+    int i = 0;
+    while(StackGetSize(stack)){
+        tstack = top(stack);
+        stack = pop(stack);
+        code_generator(ft,tstack->ast,gst,tstack->lst);
+        if(i == 0){
+            generateExit(ft);
+            i = 1;
+        }
+    }
     exit(1);
 }
 |   MainBlock   {
     $$ = NULL;
     printf("Parsing Completed\n");
-    generateExit(ft);
+    generateHeader(ft);
+    int i = 0;
+    while(StackGetSize(stack)){
+        tstack = top(stack);
+        stack = pop(stack);
+        code_generator(ft,tstack->ast,gst,tstack->lst);
+        if(i == 0){
+            generateExit(ft);
+            i = 1;
+        }
+    }
     exit(1);
 }
 ;
 
 //-----------------------Global Declarations------------------
-GDeclBlock  :   _DECL   GDeclList   _ENDDECL    {generateHeader(ft);}
-|   _DECL   _ENDDECL    {generateHeader(ft);}
+GDeclBlock  :   _DECL   GDeclList   _ENDDECL    {}
+|   _DECL   _ENDDECL    {}
 ;
 GDeclList   :   GDeclList   GDecl   {}
 |   GDecl   {}
@@ -158,9 +191,10 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}' {
     Parserparam = ParamDelete(Parserparam);
     $$ = makeTreeNode(FUNCTION,INTEGER,$2->varname,-1,-1,$8,NULL,temp1,"FUNCTION");
     printGST(gst);
-    print_tree($$);
+    ASTPrintTree($$);
     printf("\n");
-    code_generator(ft,$$,gst,temp1->lst);
+    stack = push(stack,$$,temp1->lst);
+    //code_generator(ft,$$,gst,temp1->lst);
     $$ = ASTDelete($$);
 }
 |   Type    _ID '(' ')' '{' LDeclBlock  Body    '}' {
@@ -182,9 +216,10 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}' {
     Parserparam = ParamDelete(Parserparam);
     $$ = makeTreeNode(FUNCTION,INTEGER,$2->varname,-1,-1,$7,NULL,temp1,"FUNCTION");
     printGST(gst);
-    print_tree($$);
+    ASTPrintTree($$);
     printf("\n");
-    code_generator(ft,$$,gst,temp1->lst);
+    stack = push(stack,$$,temp1->lst);
+    //code_generator(ft,$$,gst,temp1->lst);
     $$ = ASTDelete($$);
 }
 ;
@@ -219,7 +254,7 @@ IdList  :   IdList  ',' _ID {
 
 //----------------------ArgList---------------------------
 ArgList :   ArgList ',' stringExp   {
-    $1->right = $3;
+    $1->next_param = $3;
     $$ = $1;
 }
 |   stringExp   {
@@ -494,7 +529,8 @@ id: _ID {
     }
     $1->nodetype = FUNCTION;
     $1->type = temp1->type;
-    $1->left = $3;
+    $1->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+    *($1->param) = *($3);
     $3 = ASTDelete($3);
     $$ = $1;
 }
@@ -510,6 +546,7 @@ int main(int argc,char *argv[]){
     gst = init_GSTable();
     lst = init_LSTable();
     Parserparam = init_ParamList();
+    stack = init_Stack();
     ADDR = 4096;
     LABEL = 0;
     TYPE = -1;
