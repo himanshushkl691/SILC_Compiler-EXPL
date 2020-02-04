@@ -1,4 +1,4 @@
-//#include "astree.h"
+// #include "astree.h"
 //-------------------------Static Storage Allocation----------------------------------
 int allocate(int size)
 {
@@ -921,6 +921,17 @@ reg_idx functionCall_code_generator(FILE *ft, struct AST_Node *root, struct GSTa
 	return z;
 }
 
+void return_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *gst, struct LSTable *lst)
+{
+	reg_idx z1 = getReg();
+	reg_idx z2 = expression_code_generator(ft, root->left, gst, lst);
+	fprintf(ft, "MOV R%d, BP\nSUB R%d, 2\nMOV [R%d], R%d\n", z1, z1, z1, z2);
+	z2 = freeReg();
+	z1 = freeReg();
+	fprintf(ft, "MOV SP, BP\nPOP BP\nRET\n");
+	return;
+}
+
 void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel, struct GSTable *g, struct LSTable *l)
 {
 	if (root)
@@ -985,6 +996,11 @@ void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel
 			breakpoint_code_generator(ft, root);
 			return;
 		}
+		else if (root->nodetype == RETURN)
+		{
+			return_code_generator(ft, root, g, l);
+			return;
+		}
 		code_generator_util(ft, root->left, blabel, clabel, g, l);
 		code_generator_util(ft, root->right, blabel, clabel, g, l);
 	}
@@ -994,21 +1010,22 @@ void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel
 void generateHeader(FILE *ft)
 {
 	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
-	fprintf(ft, "MOV SP, %d\n", ADDR - 1);
+	fprintf(ft, "MOV SP, %d\nMOV BP, 4096\nPUSH R0\n", ADDR - 1);
 	return;
 }
 
 void generateExit(FILE *ft)
 {
-	reg_idx temp = getReg();
-	fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
-	fprintf(ft, "PUSH R%d\n", temp);
-	fprintf(ft, "PUSH R%d\n", temp);
-	fprintf(ft, "PUSH R%d\n", temp);
-	fprintf(ft, "PUSH R%d\n", temp);
-	fprintf(ft, "PUSH R%d\n", temp);
-	fprintf(ft, "CALL 0\n");
-	temp = freeReg();
+	fprintf(ft,"INT 10\n");
+	// reg_idx temp = getReg();
+	// fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
+	// fprintf(ft, "PUSH R%d\n", temp);
+	// fprintf(ft, "PUSH R%d\n", temp);
+	// fprintf(ft, "PUSH R%d\n", temp);
+	// fprintf(ft, "PUSH R%d\n", temp);
+	// fprintf(ft, "PUSH R%d\n", temp);
+	// fprintf(ft, "CALL 0\n");
+	// temp = freeReg();
 	return;
 }
 

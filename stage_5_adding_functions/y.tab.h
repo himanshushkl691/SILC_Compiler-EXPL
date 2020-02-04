@@ -55,14 +55,14 @@ extern int yydebug;
     _NUM = 265,
     _STRING = 266,
     _ID = 267,
-    _LT = 268,
-    _LE = 269,
-    _GT = 270,
-    _GE = 271,
-    _NE = 272,
-    _EQ = 273,
-    _INT = 274,
-    _STR = 275,
+    _INT = 268,
+    _STR = 269,
+    _LT = 270,
+    _LE = 271,
+    _GT = 272,
+    _GE = 273,
+    _NE = 274,
+    _EQ = 275,
     _READ = 276,
     _WRITE = 277,
     _BEGIN = 278,
@@ -79,7 +79,8 @@ extern int yydebug;
     _BREAK = 289,
     _CONTINUE = 290,
     _BREAKPOINT = 291,
-    _MAIN = 292
+    _MAIN = 292,
+    _RETURN = 293
   };
 #endif
 /* Tokens.  */
@@ -93,14 +94,14 @@ extern int yydebug;
 #define _NUM 265
 #define _STRING 266
 #define _ID 267
-#define _LT 268
-#define _LE 269
-#define _GT 270
-#define _GE 271
-#define _NE 272
-#define _EQ 273
-#define _INT 274
-#define _STR 275
+#define _INT 268
+#define _STR 269
+#define _LT 270
+#define _LE 271
+#define _GT 272
+#define _GE 273
+#define _NE 274
+#define _EQ 275
 #define _READ 276
 #define _WRITE 277
 #define _BEGIN 278
@@ -118,6 +119,7 @@ extern int yydebug;
 #define _CONTINUE 290
 #define _BREAKPOINT 291
 #define _MAIN 292
+#define _RETURN 293
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -128,7 +130,7 @@ union YYSTYPE
 
     struct AST_Node *node;
 
-#line 132 "y.tab.h" /* yacc.c:1909  */
+#line 134 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

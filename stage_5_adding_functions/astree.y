@@ -27,7 +27,7 @@
 /**/
 %type <node> _BREAK _CONTINUE _BREAKPOINT
 %type <node> GDeclBlock GDeclList GDecl GIdList GId
-%type <node> LDecl LDeclBlock LDeclList IdList Type
+%type <node> LDecl LDeclBlock LDeclList IdList Type _INT _STR
 %type <node> Param ParamList ArgList
 %type <node> FnDef FnDefBlock MainBlock
 %type <node> Program
@@ -41,10 +41,10 @@
 %token _PLUS _MINUS _MUL _DIV _MOD
 //constants and identifiers
 %token _NUM _STRING _ID
+//data types
+%token _INT _STR
 //relop
 %token _LT _LE _GT _GE _NE _EQ
-//data type
-%token _INT _STR
 //read and write
 %token _READ _WRITE
 //begin and end of function
@@ -56,7 +56,7 @@
 //repeat-until
 %token _REPEAT _UNTIL
 //break, continue, breakpoint
-%token _BREAK _CONTINUE _BREAKPOINT _MAIN
+%token _BREAK _CONTINUE _BREAKPOINT _MAIN   _RETURN
 /*ASSOCIATIVITY*/
 %left _LT _LE
 %left _GT _GE
@@ -71,6 +71,11 @@
 
 //------------------------MainBlock---------------------------
 MainBlock   :   _INT    _MAIN   '(' ')' '{' LDeclBlock  Body    '}' {
+    if(RET_TYPE != INTEGER){
+        printf("line %d :Return type does not match\n",line);
+        exit(1);
+    }
+    RET_TYPE = -1;
     gst = GSTInstall(gst,INTEGER,FUNCTION,"main",1,NULL,NULL);
     temp1 = GSTLookUp(gst,"main");
     temp1->lst = lst;
@@ -80,14 +85,21 @@ MainBlock   :   _INT    _MAIN   '(' ')' '{' LDeclBlock  Body    '}' {
     ASTPrintTree($$);
     printf("\n");
     stack = push(stack,$$,temp1->lst);
-    //code_generator(ft,$$,gst,temp1->lst);
     $$ = ASTDelete($$);
 }
 ;
 
 //-------------------------Body-------------------------------
-Body    :   _BEGIN  Slist   _END    {$$ = $2;}
-|   _BEGIN  _END    {$$ = NULL;}
+Body    :   _BEGIN  Slist   _RETURN stringExp ';'   _END    {
+    RET_TYPE = $4->type;
+    temp2 = makeTreeNode(RETURN,RETURN,NULL,-1,-1,$4,NULL,NULL,"RETURN");
+    $$ = makeTreeNode(STATEMENT,STATEMENT,NULL,-1,-1,$2,temp2,NULL,"STATEMENT");
+}
+|   _BEGIN  _RETURN stringExp   ';' _END    {
+    RET_TYPE = $3->type;
+    temp2 = makeTreeNode(RETURN,RETURN,NULL,-1,-1,$3,NULL,NULL,"RETURN");
+    $$ = makeTreeNode(STATEMENT,STATEMENT,NULL,-1,-1,NULL,temp2,NULL,"STATEMENT");
+}
 ;
 
 //-------------------------Program----------------------------
@@ -99,11 +111,13 @@ Program :   GDeclBlock   FnDefBlock   MainBlock {
     while(StackGetSize(stack)){
         tstack = top(stack);
         stack = pop(stack);
-        code_generator(ft,tstack->ast,gst,tstack->lst);
         if(i == 0){
+            temp1 = GSTLookUp(gst,"main");
+            fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
             generateExit(ft);
             i = 1;
         }
+        code_generator(ft,tstack->ast,gst,tstack->lst);
     }
     exit(1);
 }
@@ -115,11 +129,13 @@ Program :   GDeclBlock   FnDefBlock   MainBlock {
     while(StackGetSize(stack)){
         tstack = top(stack);
         stack = pop(stack);
-        code_generator(ft,tstack->ast,gst,tstack->lst);
         if(i == 0){
+            temp1 = GSTLookUp(gst,"main");
+            fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
             generateExit(ft);
             i = 1;
         }
+        code_generator(ft,tstack->ast,gst,tstack->lst);
     }
     exit(1);
 }
@@ -131,11 +147,13 @@ Program :   GDeclBlock   FnDefBlock   MainBlock {
     while(StackGetSize(stack)){
         tstack = top(stack);
         stack = pop(stack);
-        code_generator(ft,tstack->ast,gst,tstack->lst);
         if(i == 0){
+            temp1 = GSTLookUp(gst,"main");
+            fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
             generateExit(ft);
             i = 1;
         }
+        code_generator(ft,tstack->ast,gst,tstack->lst);
     }
     exit(1);
 }
@@ -175,17 +193,22 @@ FnDefBlock  :   FnDefBlock  FnDef   {}
 FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}' {
     temp1 = GSTLookUp(gst,$2->varname);
     if(!temp1){
-        printf("\"%s\" function not declared\n",$2->varname);
+        printf("line %d :\"%s\" function not declared\n",line,$2->varname);
         exit(1);
     }
-    if(TYPE != temp1->type){
-        printf("Invalid return type for \"%s\"\n",$2->varname);
+    if($1->type != temp1->type){
+        printf("line %d :Invalid return type for \"%s\"\n",line,$2->varname);
         exit(1);
     }
     if(!checkParamList(Parserparam,temp1->param)){
-        printf("Number of Formal Arguments does not match with declaration\n");
+        printf("line %d :Number of Formal Arguments does not match with declaration\n",line);
         exit(1);
     }
+    if(RET_TYPE != temp1->type){
+        printf("line %d :Return type does not match\n",line);
+        exit(1);
+    }
+    RET_TYPE = -1;
     temp1->lst = lst;
     lst = LSTDelete(lst);
     Parserparam = ParamDelete(Parserparam);
@@ -194,23 +217,27 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}' {
     ASTPrintTree($$);
     printf("\n");
     stack = push(stack,$$,temp1->lst);
-    //code_generator(ft,$$,gst,temp1->lst);
     $$ = ASTDelete($$);
 }
 |   Type    _ID '(' ')' '{' LDeclBlock  Body    '}' {
     temp1 = GSTLookUp(gst,$2->varname);
     if(!temp1){
-        printf("\"%s\" function not declared\n",$2->varname);
+        printf("line %d :\"%s\" function not declared\n",line,$2->varname);
         exit(1);
     }
-    if(TYPE != temp1->type){
-        printf("Invalid return type for \"%s\"\n",$2->varname);
+    if($1->type != temp1->type){
+        printf("line %d :Invalid return type for \"%s\"\n",line,$2->varname);
         exit(1);
     }
     if(!checkParamList(Parserparam,temp1->param)){
-        printf("Number of Formal Arguments does not match with declaration\n");
+        printf("line %d :Number of Formal Arguments does not match with declaration\n",line);
         exit(1);
     }
+    if(RET_TYPE != temp1->type){
+        printf("line %d :Return type does not match\n",line);
+        exit(1);
+    }
+    RET_TYPE = -1;
     temp1->lst = lst;
     lst = LSTDelete(lst);
     Parserparam = ParamDelete(Parserparam);
@@ -219,7 +246,6 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}' {
     ASTPrintTree($$);
     printf("\n");
     stack = push(stack,$$,temp1->lst);
-    //code_generator(ft,$$,gst,temp1->lst);
     $$ = ASTDelete($$);
 }
 ;
@@ -234,9 +260,11 @@ Param   :   Type    _ID {Parserparam = ParamInsert(Parserparam,$2->varname,TYPE,
 //-----------------------Local Declaration--------------------
 LDeclBlock  :   _DECL   LDeclList   _ENDDECL    {
     lst = ParamToLSTInstall(lst,Parserparam);
+    TYPE = -1;
 }
 |   _DECL   _ENDDECL    {
     lst = ParamToLSTInstall(lst,Parserparam);
+    TYPE = -1;
 }
 ;
 LDeclList   :   LDeclList   LDecl   {}
@@ -263,8 +291,8 @@ ArgList :   ArgList ',' stringExp   {
 ;
 
 //-----------------------Type-----------------------------
-Type    :   _INT    {TYPE = INTEGER;}
-|   _STR    {TYPE = STRING;}
+Type    :   _INT    {TYPE = INTEGER;$$ = $1;}
+|   _STR    {TYPE = STRING;$$ = $1;}
 ;
 
 //-----------------------Statement List-------------------
@@ -318,7 +346,7 @@ Assgstmt:   id '=' stringExp ';'{
     if(((typeCheckExp($1) && typeCheckExp($3)) || (typeCheckStr($1) && typeCheckStr($3))) && ($1->nodetype != FUNCTION))
 	    $$ = makeTreeNode(STATEMENT,ASSIGNMENT,NULL,-1,-1,$1,$3,NULL,"=");
     else{
-        printf("Invalid assignment to \"%s\"\n",$1->varname);
+        printf("line %d :Invalid assignment to \"%s\"\n",line,$1->varname);
         exit(1);
     }
 }
@@ -337,7 +365,7 @@ Ifstmt:	_IF '(' expr ')' _THEN Slist _ELSE Slist _ENDIF ';'{
 }
 |	_IF '(' expr ')' _THEN Slist _ENDIF ';'{
     if(!typeCheckBool($3)){
-        printf("Invalid boolean statement\n");
+        printf("line %d :Invalid boolean statement\n",line);
         exit(1);
     }
 	struct AST_Node *temp1 = makeTreeNode(STATEMENT,IF,NULL,-1,-1,$3,$6,NULL,"IF");
@@ -348,7 +376,7 @@ Whilestmt: _WHILE '(' expr ')' _DO Slist _ENDWHILE ';'{
     if(typeCheckBool($3))
 	    $$ = makeTreeNode(LOOP,WHILE,NULL,-1,-1,$3,$6,NULL,"WHILE");
     else{
-        printf("Invalid bool statement\n");
+        printf("line %d :Invalid bool statement\n",line);
         exit(1);
     }
 }
@@ -357,7 +385,7 @@ RepeatUntil:    _REPEAT '{' Slist '}' _UNTIL '(' expr ')' ';'   {
     if(typeCheckBool($7))
         $$ = makeTreeNode(LOOP,REPEAT_UNTIL,NULL,-1,-1,$3,$7,NULL,"REPEAT_UNTIL");
     else{
-        printf("Invalid bool statement\n");
+        printf("line %d :Invalid bool statement\n",line);
         exit(1);
     }
 }
@@ -366,7 +394,7 @@ DoWhile:    _DO '{' Slist '}' _WHILE '(' expr ')' ';'   {
     if(typeCheckBool($7))
         $$ = makeTreeNode(LOOP,DO_WHILE,NULL,-1,-1,$3,$7,NULL,"DO_WHILE");
     else{
-        printf("Invalid bool statement\n");
+        printf("line %d :Invalid bool statement\n",line);
         exit(1);
     }
 }
@@ -376,7 +404,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,INTEGER,NULL,PLUS,-1,$1,$3,NULL,"+");
     else{
-        printf("Invalid operand\n");
+        printf("line %d :Invalid operand\n",line);
         exit(1);
     }
 }
@@ -384,7 +412,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,INTEGER,NULL,MINUS,-1,$1,$3,NULL,"-");
     else{
-        printf("Invalid operand\n");
+        printf("line %d :Invalid operand\n",line);
         exit(1);
     }
 }
@@ -392,7 +420,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,INTEGER,NULL,MUL,-1,$1,$3,NULL,"*");
     else{
-        printf("Invalid operand\n");
+        printf("line %d :Invalid operand\n",line);
         exit(1);
     }
 }
@@ -400,7 +428,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,INTEGER,NULL,DIV,-1,$1,$3,NULL,"/");
     else{
-        printf("Invalid operand\n");
+        printf("line %d :Invalid operand\n",line);
         exit(1);
     }
 }
@@ -408,7 +436,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,INTEGER,NULL,MOD,-1,$1,$3,NULL,"%");
     else{
-        printf("Invalid operand\n");
+        printf("line %d :Invalid operand\n",line);
         exit(1);
     }
 }
@@ -416,7 +444,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,LT,-1,$1,$3,NULL,"<");
     else{
-        printf("Invalid Operator\n");
+        printf("line %d :Invalid Operator\n",line);
         exit(1);
     }
 }
@@ -424,7 +452,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,LE,-1,$1,$3,NULL,"<=");
     else{
-        printf("Invalid Operator\n");
+        printf("line %d :Invalid Operator\n",line);
         exit(1);
     }
 }
@@ -432,7 +460,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,GT,-1,$1,$3,NULL,">");
     else{
-        printf("Invalid Operator\n");
+        printf("line %d :Invalid Operator\n",line);
         exit(1);
     }
 }
@@ -440,7 +468,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,GE,-1,$1,$3,NULL,">=");
     else{
-        printf("Invalid Operator\n");
+        printf("line %d :Invalid Operator\n",line);
         exit(1);
     }
 }
@@ -448,7 +476,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,NE,-1,$1,$3,NULL,"!=");
     else{
-        printf("Invalid Operator\n");
+        printf("line %d :Invalid Operator\n",line);
         exit(1);
     }
 }
@@ -456,7 +484,7 @@ expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
         $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,EQ,-1,$1,$3,NULL,"==");
     else{
-        printf("Invalid Operator\n");
+        printf("line %d :Invalid Operator\n",line);
         exit(1);
     }
 }
@@ -475,7 +503,7 @@ id: _ID {
     else{
         temp1 = GSTLookUp(gst,$1->varname);
         if(!temp1){
-            printf("Variable \"%s\" not declared\n",$$->varname);
+            printf("line %d :Variable \"%s\" not declared\n",line,$$->varname);
             exit(1);
         }
         else
@@ -484,13 +512,13 @@ id: _ID {
 }
 |   _ID '[' expr ']' {
     if($3->type != INTEGER){
-        printf("Invalid index\n");
+        printf("line %d :Invalid index\n",line);
         exit(1);
     }
     temp3 = LSTLookUp(lst,$1->varname);
     if(temp3){
         if(temp3->type_of_var != ARRAY_VARIABLE){
-            printf("Variable \"%s\" not of array type\n",$1->varname);
+            printf("line %d :Variable \"%s\" not of array type\n",line,$1->varname);
             exit(1);
         }
         $1->type = temp3->type;
@@ -500,12 +528,12 @@ id: _ID {
         temp1 = GSTLookUp(gst,$1->varname);
         if(!temp1)
         {
-            printf("Variable \"%s\" not declared\n",$1->varname);
+            printf("line %d :Variable \"%s\" not declared\n",line,$1->varname);
             exit(1);            
         }
         else{
             if(temp1->type_of_var != ARRAY_VARIABLE){
-                printf("Variable \"%s\" not of array type\n",$1->varname);
+                printf("line %d :Variable \"%s\" not of array type\n",line,$1->varname);
                 exit(1);
             }
             $1->type = temp1->type;
@@ -516,15 +544,15 @@ id: _ID {
 |   _ID '(' ArgList ')' {
     temp1 = GSTLookUp(gst,$1->varname);
     if(!temp1){
-        printf("Function \"%s\" not declared\n",$1->varname);
+        printf("line %d :Function \"%s\" not declared\n",line,$1->varname);
         exit(1);
     }
     if(temp1->type_of_var != FUNCTION){
-        printf("\"%s\" not a function\n",$1->varname);
+        printf("line %d :\"%s\" not a function\n",line,$1->varname);
         exit(1);
     }
     if(!checkASTParam(temp1->param,$3)){
-        printf("Wrong arguments in \"%s\", does not match with declaration\n",$1->varname);
+        printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,$1->varname);
         exit(1);
     }
     $1->nodetype = FUNCTION;
@@ -550,6 +578,7 @@ int main(int argc,char *argv[]){
     ADDR = 4096;
     LABEL = 0;
     TYPE = -1;
+    RET_TYPE = -1;
     line = 1;
     if(argc > 1){
 		printf("Generating file as %s\n",argv[1]);

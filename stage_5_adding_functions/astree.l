@@ -11,6 +11,7 @@ digit [0-9]+
 
 %%
 main        {return _MAIN;}
+return      {return _RETURN;}
 begin 		{return _BEGIN;}
 end 		{return _END;}
 read 		{return _READ;}
@@ -24,8 +25,8 @@ do		    {return _DO;}
 endwhile	{return _ENDWHILE;}
 repeat      {return _REPEAT;}
 until       {return _UNTIL;}
-int         {return _INT;}
-str         {return _STR;}
+int         {yylval.node = makeTreeNode(INTEGER,INTEGER,NULL,-1,-1,NULL,NULL,NULL,"integer");return _INT;}
+str         {yylval.node = makeTreeNode(STRING,STRING,NULL,-1,-1,NULL,NULL,NULL,"string");return _STR;}
 decl        {return _DECL;}
 enddecl     {return _ENDDECL;}
 break       {yylval.node = makeTreeNode(BREAK,BREAK,NULL,-1,-1,NULL,NULL,NULL,yytext);return _BREAK;}

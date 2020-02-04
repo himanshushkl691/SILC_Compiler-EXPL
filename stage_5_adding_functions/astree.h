@@ -45,11 +45,13 @@
 #define EQ 36
 
 #define ARGUMENT 37
+#define RETURN 38
 
 int ADDR;
 int LABEL;
 int line;
 int TYPE;
+int RET_TYPE;
 
 //---------------------------------------CodeGen Stack-------------------------------
 struct StackNode
@@ -222,6 +224,7 @@ void break_code_generator(FILE *, struct AST_Node *, int, int);
 void continue_code_generator(FILE *, struct AST_Node *, int, int);
 void breakpoint_code_generator(FILE *, struct AST_Node *);
 reg_idx functionCall_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+void return_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
 void repeat_until_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
 void do_while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
 void code_generator_util(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);

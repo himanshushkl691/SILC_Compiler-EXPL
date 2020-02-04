@@ -1,32 +1,29 @@
 decl
-	int a,b,f1(int a,int b),arr[10],f2(int a);
+	int fac(int a);
 enddecl
-int f2(int a)
+int fac(int n)
 {
 	decl
-		int z,x,y;
+		int f;
 	enddecl
 	begin
-		write(z);
-	end
-}
-
-int f1(int a,int b)
-{
-	decl
-		int fact;
-	enddecl
-	begin
-		fact = 2;
+		if(n == 1) then
+			f = 1;
+		else
+			f = n * fac(n - 1);
+		endif;
+		return f;
 	end
 }
 int main()
 {
 	decl
-		int a_m,b_m;
-		str s;
+		int z,x;
 	enddecl
 	begin
-		a_m = f1(a_m,f1(b_m,b_m));
+		read(x);
+		z = fac(x);
+		write(z);
+		return 0;
 	end
 }
