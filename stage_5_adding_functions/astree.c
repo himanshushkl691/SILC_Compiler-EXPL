@@ -11,7 +11,9 @@ void init_storage()
 {
 	ADDR = 4096;
 }
+//------------------------------------------------------------------------------------
 
+//-------------------------Label Allocation------------------------------------
 void init_Label()
 {
 	LABEL = 0;
@@ -476,52 +478,9 @@ struct LSTable *ParamToLSTInstall(struct LSTable *l, struct ParamList *p)
 	return l;
 }
 
-reg_idx getAddress(FILE *ft, char *varname, struct GSTable *g, struct LSTable *l)
-{
-	struct GSTNode *curr1;
-	struct LSTNode *curr2;
-	curr2 = LSTLookUp(l, varname);
-	if (curr2)
-	{
-		reg_idx a = getReg();
-		fprintf(ft, "MOV R%d, BP\n", a);
-		fprintf(ft, "ADD R%d, %d\n", a, curr2->binding_addr);
-		return a;
-	}
-	else
-	{
-		curr1 = GSTLookUp(g, varname);
-		reg_idx a = getReg();
-		fprintf(ft, "MOV R%d, %d\n", a, curr1->binding_addr);
-		return a;
-	}
-}
-
-reg_idx getArrayNodeAddress(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
-{
-	struct GSTNode *curr = GSTLookUp(g, root->left->varname);
-	reg_idx temp0 = getReg();
-	fprintf(ft, "MOV R%d, %d\n", temp0, curr->binding_addr);
-	reg_idx temp1 = expression_code_generator(ft, root->right, g, l);
-	fprintf(ft, "ADD R%d, R%d\n", temp0, temp1);
-	temp1 = freeReg();
-	return temp0;
-}
-
 int getFunctionLabel(struct GSTable *gst, char *fname)
 {
 	return (GSTLookUp(gst, fname)->binding_addr);
-}
-
-void PushArgument(FILE *ft, struct AST_Node *root, struct GSTable *gst, struct LSTable *lst)
-{
-	if (root)
-	{
-		PushArgument(ft, root->next_param, gst, lst);
-		reg_idx z = expression_code_generator(ft, root, gst, lst);
-		fprintf(ft, "PUSH R%d\n", z);
-		z = freeReg();
-	}
 }
 //-----------------------------------------------------------------------------------
 
@@ -1016,7 +975,7 @@ void generateHeader(FILE *ft)
 
 void generateExit(FILE *ft)
 {
-	fprintf(ft,"INT 10\n");
+	fprintf(ft, "INT 10\n");
 	// reg_idx temp = getReg();
 	// fprintf(ft, "MOV R%d, \"Exit\"\n", temp);
 	// fprintf(ft, "PUSH R%d\n", temp);
@@ -1027,6 +986,49 @@ void generateExit(FILE *ft)
 	// fprintf(ft, "CALL 0\n");
 	// temp = freeReg();
 	return;
+}
+
+reg_idx getAddress(FILE *ft, char *varname, struct GSTable *g, struct LSTable *l)
+{
+	struct GSTNode *curr1;
+	struct LSTNode *curr2;
+	curr2 = LSTLookUp(l, varname);
+	if (curr2)
+	{
+		reg_idx a = getReg();
+		fprintf(ft, "MOV R%d, BP\n", a);
+		fprintf(ft, "ADD R%d, %d\n", a, curr2->binding_addr);
+		return a;
+	}
+	else
+	{
+		curr1 = GSTLookUp(g, varname);
+		reg_idx a = getReg();
+		fprintf(ft, "MOV R%d, %d\n", a, curr1->binding_addr);
+		return a;
+	}
+}
+
+reg_idx getArrayNodeAddress(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
+{
+	struct GSTNode *curr = GSTLookUp(g, root->left->varname);
+	reg_idx temp0 = getReg();
+	fprintf(ft, "MOV R%d, %d\n", temp0, curr->binding_addr);
+	reg_idx temp1 = expression_code_generator(ft, root->right, g, l);
+	fprintf(ft, "ADD R%d, R%d\n", temp0, temp1);
+	temp1 = freeReg();
+	return temp0;
+}
+
+void PushArgument(FILE *ft, struct AST_Node *root, struct GSTable *gst, struct LSTable *lst)
+{
+	if (root)
+	{
+		PushArgument(ft, root->next_param, gst, lst);
+		reg_idx z = expression_code_generator(ft, root, gst, lst);
+		fprintf(ft, "PUSH R%d\n", z);
+		z = freeReg();
+	}
 }
 
 void code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)

@@ -53,27 +53,19 @@ int line;
 int TYPE;
 int RET_TYPE;
 
-//---------------------------------------CodeGen Stack-------------------------------
-struct StackNode
-{
-	struct AST_Node *ast;
-	struct LSTable *lst;
-	struct StackNode *next;
-};
+//------------------------------------Static Storage Allocation---------------------------
+//returns next available address
+int allocate(int);
+//resets addr variable to zero
+void init_storage();
+//----------------------------------------------------------------------------------------
 
-struct Stack
-{
-	struct StackNode *head;
-	int size;
-};
-
-struct StackNode *init_StackNode(struct AST_Node *, struct LSTable *);
-struct Stack *init_Stack();
-struct Stack *push(struct Stack *, struct AST_Node *, struct LSTable *);
-struct Stack *pop(struct Stack *);
-struct StackNode *top(struct Stack *);
-int StackGetSize(struct Stack *);
-//-------------------------------------------------------------------------------
+//---------------------------------------Label Allocation---------------------------------
+//resets LABEL variable to 0
+void init_Label();
+//returns next available LABEL
+int getLabel();
+//-----------------------------------------------------------------------------------------
 
 //-----------------------------------------Parameter Linked List-------------------------------------------
 struct ParamNode
@@ -188,17 +180,13 @@ struct AST_Node *ASTDelete(struct AST_Node *);
 //----------------------------------------------------------------------------------------------------------
 
 //-----------------------------------Auxiliary Function----------------------------------------
-//returns next available address
-int allocate(int);
-//resets addr variable to zero
-void init_storage();
-//resets LABEL variable to 0
-void init_Label();
-//returns next available LABEL
-int getLabel();
 int typeCheckExp(struct AST_Node *);
 int typeCheckBool(struct AST_Node *);
 int typeCheckStr(struct AST_Node *);
+int getFunctionLabel(struct GSTable *, char *);
+struct LSTable *ParamToLSTInstall(struct LSTable *, struct ParamList *);
+int checkASTParam(struct ParamList *, struct AST_Node *);
+int checkParamList(struct ParamList *p1, struct ParamList *p2);
 //---------------------------------------------------------------------------------------------
 
 //-----------------------------------------Register Allocation Strategy---------------------------------------------------
@@ -212,6 +200,28 @@ reg_idx getReg();
 reg_idx freeReg();
 //------------------------------------------------------------------------------------------------------------------------
 
+//---------------------------------------CodeGen Stack-------------------------------
+struct StackNode
+{
+	struct AST_Node *ast;
+	struct LSTable *lst;
+	struct StackNode *next;
+};
+
+struct Stack
+{
+	struct StackNode *head;
+	int size;
+};
+
+struct StackNode *init_StackNode(struct AST_Node *, struct LSTable *);
+struct Stack *init_Stack();
+struct Stack *push(struct Stack *, struct AST_Node *, struct LSTable *);
+struct Stack *pop(struct Stack *);
+struct StackNode *top(struct Stack *);
+int StackGetSize(struct Stack *);
+//-------------------------------------------------------------------------------
+
 //-----------------------------------------Code Generation Function-------------------------------------------------------
 reg_idx expression_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
 int assignment_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
@@ -220,16 +230,20 @@ int write_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LST
 void boolean_code_generator(FILE *, struct AST_Node *, int, struct GSTable *, struct LSTable *);
 void if_else_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
 void while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
+void repeat_until_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
+void do_while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
 void break_code_generator(FILE *, struct AST_Node *, int, int);
 void continue_code_generator(FILE *, struct AST_Node *, int, int);
 void breakpoint_code_generator(FILE *, struct AST_Node *);
 reg_idx functionCall_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
 void return_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
-void repeat_until_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
-void do_while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
 void code_generator_util(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
 void code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+void generateExit(FILE *);
+void generateHeader(FILE *);
 reg_idx getArrayNodeAddress(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+reg_idx getAddress(FILE *, char *, struct GSTable *, struct LSTable *);
+void PushArgument(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------------Evaluator Function-------------------------------------------------------
