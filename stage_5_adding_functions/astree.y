@@ -70,94 +70,90 @@
 //---------------------------Rules----------------------------
 
 //------------------------MainBlock---------------------------
-MainBlock   :   _INT    _MAIN   '(' ')' '{' LDeclBlock  Body    '}' {
-    if(RET_TYPE != INTEGER){
-        printf("line %d :Return type does not match\n",line);
-        exit(1);
-    }
-    RET_TYPE = -1;
-    gst = GSTInstall(gst,INTEGER,FUNCTION,"main",1,NULL,NULL);
-    temp1 = GSTLookUp(gst,"main");
-    temp1->lst = lst;
-    lst = LSTDelete(lst);
-    $$ = makeTreeNode(FUNCTION,INTEGER,"main",-1,-1,$7,NULL,temp1,"main");
-    printGST(gst);
-    ASTPrintTree($$);
-    printf("\n");
-    stack = push(stack,$$,temp1->lst);
-    $$ = ASTDelete($$);
-}
-;
+MainBlock   :   _INT    _MAIN   '(' ')' '{' LDeclBlock  Body    '}'{
+	    								if(RET_TYPE != INTEGER){
+									       	printf("line %d :Return type does not match\n",line);
+								        	exit(1);
+									}
+									RET_TYPE = -1;
+									gst = GSTInstall(gst,INTEGER,FUNCTION,"main",1,NULL,NULL);
+									temp1 = GSTLookUp(gst,"main");
+									temp1->lst = lst;
+									lst = LSTDelete(lst);
+									$$ = makeTreeNode(FUNCTION,INTEGER,"main",-1,-1,$7,NULL,temp1,"main");									      printGST(gst);
+									ASTPrintTree($$);
+									printf("\n");
+									stack = push(stack,$$,temp1->lst);
+									$$ = ASTDelete($$);
+								};
 
 //-------------------------Body-------------------------------
-Body    :   _BEGIN  Slist   _RETURN stringExp ';'   _END    {
-    RET_TYPE = $4->type;
-    temp2 = makeTreeNode(RETURN,RETURN,NULL,-1,-1,$4,NULL,NULL,"RETURN");
-    $$ = makeTreeNode(STATEMENT,STATEMENT,NULL,-1,-1,$2,temp2,NULL,"STATEMENT");
-}
-|   _BEGIN  _RETURN stringExp   ';' _END    {
-    RET_TYPE = $3->type;
-    temp2 = makeTreeNode(RETURN,RETURN,NULL,-1,-1,$3,NULL,NULL,"RETURN");
-    $$ = makeTreeNode(STATEMENT,STATEMENT,NULL,-1,-1,NULL,temp2,NULL,"STATEMENT");
-}
-;
+Body    :   _BEGIN  Slist   _RETURN stringExp ';'   _END{
+								RET_TYPE = $4->type;
+								temp2 = makeTreeNode(RETURN,RETURN,NULL,-1,-1,$4,NULL,NULL,"RETURN");
+								$$ = makeTreeNode(STATEMENT,STATEMENT,NULL,-1,-1,$2,temp2,NULL,"STATEMENT");
+							}
+|   _BEGIN  _RETURN stringExp   ';' _END    		{
+								RET_TYPE = $3->type;
+								temp2 = makeTreeNode(RETURN,RETURN,NULL,-1,-1,$3,NULL,NULL,"RETURN");
+								$$ = makeTreeNode(STATEMENT,STATEMENT,NULL,-1,-1,NULL,temp2,NULL,"STATEMENT");
+							};
 
 //-------------------------Program----------------------------
-Program :   GDeclBlock   FnDefBlock   MainBlock {
-    $$ = NULL;
-    printf("Parsing Completed\n");
-    generateHeader(ft);
-    int i = 0;
-    while(StackGetSize(stack)){
-        tstack = top(stack);
-        stack = pop(stack);
-        if(i == 0){
-            temp1 = GSTLookUp(gst,"main");
-            fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
-            generateExit(ft);
-            i = 1;
-        }
-        code_generator(ft,tstack->ast,gst,tstack->lst);
-    }
-    exit(1);
-}
-|   GDeclBlock  MainBlock   {
-    $$ = NULL;
-    printf("Parsing Completed\n");
-    generateHeader(ft);
-    int i = 0;
-    while(StackGetSize(stack)){
-        tstack = top(stack);
-        stack = pop(stack);
-        if(i == 0){
-            temp1 = GSTLookUp(gst,"main");
-            fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
-            generateExit(ft);
-            i = 1;
-        }
-        code_generator(ft,tstack->ast,gst,tstack->lst);
-    }
-    exit(1);
-}
-|   MainBlock   {
-    $$ = NULL;
-    printf("Parsing Completed\n");
-    generateHeader(ft);
-    int i = 0;
-    while(StackGetSize(stack)){
-        tstack = top(stack);
-        stack = pop(stack);
-        if(i == 0){
-            temp1 = GSTLookUp(gst,"main");
-            fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
-            generateExit(ft);
-            i = 1;
-        }
-        code_generator(ft,tstack->ast,gst,tstack->lst);
-    }
-    exit(1);
-}
-;
+Program :   GDeclBlock   FnDefBlock   MainBlock 	{
+								$$ = NULL;
+								printf("Parsing Completed\n");
+								generateHeader(ft);
+								int i = 0;
+								while(StackGetSize(stack)){
+        								tstack = top(stack);
+        								stack = pop(stack);
+									if(i == 0){
+										temp1 = GSTLookUp(gst,"main");
+										fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
+										generateExit(ft);
+										i = 1;
+									}
+									code_generator(ft,tstack->ast,gst,tstack->lst);
+								}
+								exit(1);
+							}
+|   GDeclBlock  MainBlock   				{
+								$$ = NULL;
+								printf("Parsing Completed\n");
+								generateHeader(ft);
+								int i = 0;
+								while(StackGetSize(stack)){
+									tstack = top(stack);
+									stack = pop(stack);
+									if(i == 0){
+										temp1 = GSTLookUp(gst,"main");
+										fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
+										generateExit(ft);
+										i = 1;
+									}
+        								code_generator(ft,tstack->ast,gst,tstack->lst);
+								}
+								exit(1);
+							}
+|   MainBlock						{
+								$$ = NULL;
+								printf("Parsing Completed\n");
+								generateHeader(ft);
+								int i = 0;
+								while(StackGetSize(stack)){
+									tstack = top(stack);
+									stack = pop(stack);
+									if(i == 0){
+										temp1 = GSTLookUp(gst,"main");
+										fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
+										generateExit(ft);
+            									i = 1;
+        								}
+        								code_generator(ft,tstack->ast,gst,tstack->lst);
+    								}
+								exit(1);
+							};
 
 //-----------------------Global Declarations------------------
 GDeclBlock  :   _DECL   GDeclList   _ENDDECL    {}
@@ -171,32 +167,31 @@ GDecl   :   Type    GIdList ';' {}
 GIdList :   GIdList ',' GId {}
 |   GId {}
 ;
-GId :   _ID {
-    gst = GSTInstall(gst,TYPE,VARIABLE,$1->varname,1,NULL,NULL);
-}
-|   _ID '[' _NUM    ']' {
-    gst = GSTInstall(gst,TYPE,ARRAY_VARIABLE,$1->varname,$3->val,NULL,NULL);
-}
-|   _ID '(' ParamList   ')' {
-    gst = GSTInstall(gst,TYPE,FUNCTION,$1->varname,1,Parserparam,NULL);
-    Parserparam = ParamDelete(Parserparam);
-}
-|   _ID '(' ')' {
-    gst = GSTInstall(gst,TYPE,FUNCTION,$1->varname,1,NULL,NULL);
-}
-;
+GId :   _ID						{
+								gst = GSTInstall(gst,TYPE,VARIABLE,$1->varname,1,NULL,NULL);
+							}
+|   _ID '[' _NUM    ']'					{
+								gst = GSTInstall(gst,TYPE,ARRAY_VARIABLE,$1->varname,$3->val,NULL,NULL);
+							}
+|   _ID '(' ParamList   ')'				{
+								gst = GSTInstall(gst,TYPE,FUNCTION,$1->varname,1,Parserparam,NULL);
+								Parserparam = ParamDelete(Parserparam);
+							}
+|   _ID '(' ')'						{
+								gst = GSTInstall(gst,TYPE,FUNCTION,$1->varname,1,NULL,NULL);
+							};
 
 //------------------------Function Defition-------------------
 FnDefBlock  :   FnDefBlock  FnDef   {}
 |   FnDef   {}
 ;
-FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}' {
-    temp1 = GSTLookUp(gst,$2->varname);
-    if(!temp1){
-        printf("line %d :\"%s\" function not declared\n",line,$2->varname);
-        exit(1);
-    }
-    if($1->type != temp1->type){
+FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'{
+										temp1 = GSTLookUp(gst,$2->varname);
+										if(!temp1){
+											printf("line %d :\"%s\" function not declared\n",line,$2->varname);
+											exit(1);
+										}
+										if($1->type != temp1->type){
         printf("line %d :Invalid return type for \"%s\"\n",line,$2->varname);
         exit(1);
     }
