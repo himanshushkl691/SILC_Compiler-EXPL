@@ -187,6 +187,7 @@ int getFunctionLabel(struct GSTable *, char *);
 struct LSTable *ParamToLSTInstall(struct LSTable *, struct ParamList *);
 int checkASTParam(struct ParamList *, struct AST_Node *);
 int checkParamList(struct ParamList *p1, struct ParamList *p2);
+struct AST_Node *insertASTParam(struct AST_Node *, struct AST_Node *);
 //---------------------------------------------------------------------------------------------
 
 //-----------------------------------------Register Allocation Strategy---------------------------------------------------

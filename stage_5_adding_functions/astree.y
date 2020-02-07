@@ -282,7 +282,7 @@ IdList  :   IdList  ',' _ID {
 
 //----------------------ArgList---------------------------
 ArgList :   ArgList ',' stringExp   {
-    $1->next_param = $3;
+    $1 = insertASTParam($1,$3);
     $$ = $1;
 }
 |   stringExp   {
@@ -558,8 +558,8 @@ id: _ID {
     $1->nodetype = FUNCTION;
     $1->type = temp1->type;
     $1->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-    *($1->param) = *($3);
-    $3 = ASTDelete($3);
+    $1->param = $3;
+    $3 = NULL;
     $$ = $1;
 }
 ;

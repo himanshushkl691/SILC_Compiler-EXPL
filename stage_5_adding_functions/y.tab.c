@@ -1799,7 +1799,7 @@ yyreduce:
   case 33:
 #line 284 "astree.y" /* yacc.c:1646  */
     {
-    (yyvsp[-2].node)->next_param = (yyvsp[0].node);
+    (yyvsp[-2].node) = insertASTParam((yyvsp[-2].node),(yyvsp[0].node));
     (yyval.node) = (yyvsp[-2].node);
 }
 #line 1806 "y.tab.c" /* yacc.c:1646  */
@@ -2266,8 +2266,8 @@ yyreduce:
     (yyvsp[-3].node)->nodetype = FUNCTION;
     (yyvsp[-3].node)->type = temp1->type;
     (yyvsp[-3].node)->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-    *((yyvsp[-3].node)->param) = *((yyvsp[-1].node));
-    (yyvsp[-1].node) = ASTDelete((yyvsp[-1].node));
+    (yyvsp[-3].node)->param = (yyvsp[-1].node);
+    (yyvsp[-1].node) = NULL;
     (yyval.node) = (yyvsp[-3].node);
 }
 #line 2274 "y.tab.c" /* yacc.c:1646  */

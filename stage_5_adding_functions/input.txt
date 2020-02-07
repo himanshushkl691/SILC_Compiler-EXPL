@@ -1,5 +1,5 @@
 decl
-	int fac(int a);
+	int arr[10],fac(int a);
 enddecl
 int fac(int n)
 {
@@ -21,9 +21,8 @@ int main()
 		int z,x;
 	enddecl
 	begin
-		read(x);
-		z = fac(x);
-		write(z);
+		fac(1) = 0;
+		arr[z < x] = 0;
 		return 0;
 	end
 }

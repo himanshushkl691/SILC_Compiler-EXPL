@@ -447,6 +447,20 @@ int checkParamList(struct ParamList *p1, struct ParamList *p2)
 	return 1;
 }
 
+struct AST_Node *insertASTParam(struct AST_Node *a, struct AST_Node *b)
+{
+	struct AST_Node *curr, *prev;
+	prev = NULL;
+	curr = a;
+	while (curr)
+	{
+		prev = curr;
+		curr = curr->next_param;
+	}
+	prev->next_param = b;
+	return a;
+}
+
 int checkASTParam(struct ParamList *param, struct AST_Node *a)
 {
 	struct ParamNode *curr1 = param->head;
