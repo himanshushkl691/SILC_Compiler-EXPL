@@ -56,7 +56,7 @@ struct TypeTable *installTypeTableNode(struct TypeTable *t, char *name, int size
 	struct TypeTableNode *error = TypeTableLookUp(t, name);
 	if (error)
 	{
-		printf("User-Defined type already defined\n");
+		printf("line %d: User-Defined type already defined\n", line);
 		exit(0);
 	}
 	else if (t->head == NULL)
@@ -130,6 +130,22 @@ struct FieldListNode *newFieldListNode(char *name, int fieldindex, char *type_in
 
 struct FieldList *installField(struct TypeTable *t, struct FieldList *fl, char *name, char *type_info)
 {
+	int error = 0;
+	struct FieldListNode *curr = fl->head;
+	while (curr)
+	{
+		if (strcmp(name, curr->name) == 0)
+		{
+			error = 1;
+			break;
+		}
+		curr = curr->next;
+	}
+	if (error)
+	{
+		printf("*Line %d: Field name cannot be same\n", line);
+		exit(0);
+	}
 	struct TypeTableNode *proceed = TypeTableLookUp(t, type_info);
 	if (fl->head == NULL)
 		fl->head = fl->tail = newFieldListNode(name, fl->entry, type_info, proceed);
@@ -166,12 +182,15 @@ void ValidateFieldList(struct TypeTableNode *t)
 
 struct FieldListNode *FieldListLookUp(struct TypeTableNode *t, char *name)
 {
-	struct FieldListNode *curr = t->field->head;
-	while (curr)
+	if (t->field)
 	{
-		if (strcmp(name, curr->name) == 0)
-			return curr;
-		curr = curr->next;
+		struct FieldListNode *curr = t->field->head;
+		while (curr)
+		{
+			if (strcmp(name, curr->name) == 0)
+				return curr;
+			curr = curr->next;
+		}
 	}
 	return NULL;
 }
@@ -186,9 +205,9 @@ void printFieldList(struct FieldList *f)
 		{
 			printf("************************\n");
 			if (curr->type)
-				printf("name: %s\ntype_info: %s\ntype: %s\n", curr->name, curr->type_info, curr->type->name);
+				printf("fieldIdx: %d\nname: %s\ntype_info: %s\ntype: %s\n", curr->fieldIndex, curr->name, curr->type_info, curr->type->name);
 			else
-				printf("name: %s\ntype_info: %s\ntype: NULL\n", curr->name, curr->type_info);
+				printf("fieldIdx: %d\nname: %s\ntype_info: %s\ntype: NULL\n", curr->fieldIndex, curr->name, curr->type_info);
 			curr = curr->next;
 			printf("************************\n");
 		}
@@ -198,7 +217,7 @@ void printFieldList(struct FieldList *f)
 //-----------------------------------------------------------------------------------------
 
 //-----------------------------------------Parameter Linked List-------------------------------------------
-struct ParamNode *init_ParamNode(char *s, int type, int type_of_var)
+struct ParamNode *init_ParamNode(char *s, struct TypeTableNode *type, int type_of_var)
 {
 	struct ParamNode *newn = (struct ParamNode *)malloc(sizeof(struct ParamNode));
 	newn->varname = (char *)malloc(sizeof(char) * strlen(s));
@@ -217,7 +236,7 @@ struct ParamList *init_ParamList()
 	return newn;
 }
 
-struct ParamList *ParamInsert(struct ParamList *h, char *s, int type, int type_of_var)
+struct ParamList *ParamInsert(struct ParamList *h, char *s, struct TypeTableNode *type, int type_of_var)
 {
 	if (h->head == NULL)
 		h->head = h->tail = init_ParamNode(s, type, type_of_var);
@@ -253,7 +272,7 @@ void printParamList(struct ParamList *h)
 		struct ParamNode *curr = h->head;
 		while (curr)
 		{
-			printf("%s %d %d\n", curr->varname, curr->type, curr->type_of_var);
+			printf("%s %s %d\n", curr->varname, curr->type->name, curr->type_of_var);
 			curr = curr->next;
 		}
 	}
@@ -270,7 +289,7 @@ int ParamGetSize(struct ParamList *h)
 //---------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------Local Symbol Table-----------------------------------------------
-struct LSTNode *init_LSTNode(int type, int type_of_var, char *var, int binding)
+struct LSTNode *init_LSTNode(struct TypeTableNode *type, int type_of_var, char *var, int binding)
 {
 	struct LSTNode *newn = (struct LSTNode *)malloc(sizeof(struct LSTNode));
 	newn->type = type;
@@ -290,12 +309,12 @@ struct LSTable *init_LSTable()
 	return newn;
 }
 
-struct LSTable *LSTInstall(struct LSTable *h, char *varname, int type, int type_of_var)
+struct LSTable *LSTInstall(struct LSTable *h, char *varname, struct TypeTableNode *type, int type_of_var)
 {
 	struct LSTNode *curr = LSTLookUp(h, varname);
 	if (curr)
 	{
-		printf("**\"%s\" redeclared(LST)\n", varname);
+		printf("**line %d: \"%s\" redeclared(LST)\n", line, varname);
 		exit(1);
 	}
 	h->size++;
@@ -344,7 +363,7 @@ void printLST(struct LSTable *h)
 		struct LSTNode *curr = h->head;
 		while (curr)
 		{
-			printf("%s %d %d %d\n", curr->varname, curr->type, curr->type_of_var, curr->binding_addr);
+			printf("%s %s %d %d\n", curr->varname, curr->type->name, curr->type_of_var, curr->binding_addr);
 			curr = curr->next;
 		}
 	}
@@ -360,7 +379,7 @@ int LSTGetSize(struct LSTable *h)
 //----------------------------------------------------------------------------------------------------------
 
 //-----------------------------Global Symbol Table-----------------------------------
-struct GSTNode *init_GSTNode(int type, int type_of_var, char *varname, int size, struct ParamList *p, struct LSTable *l)
+struct GSTNode *init_GSTNode(struct TypeTableNode *type, int type_of_var, char *varname, int size, struct ParamList *p, struct LSTable *l)
 {
 	struct GSTNode *newn = (struct GSTNode *)malloc(sizeof(struct GSTNode));
 	newn->type = type;
@@ -399,12 +418,12 @@ struct GSTNode *GSTLookUp(struct GSTable *h, char *s)
 	return NULL;
 }
 
-struct GSTable *GSTInstall(struct GSTable *h, int type, int type_of_var, char *varname, int size, struct ParamList *p, struct LSTable *l)
+struct GSTable *GSTInstall(struct GSTable *h, struct TypeTableNode *type, int type_of_var, char *varname, int size, struct ParamList *p, struct LSTable *l)
 {
 	struct GSTNode *curr = GSTLookUp(h, varname);
 	if (curr)
 	{
-		printf("**\"%s\" redeclared(GST)\n", varname);
+		printf("**line %d: \"%s\" redeclared(GST)\n", line, varname);
 		exit(1);
 	}
 	else
@@ -453,7 +472,7 @@ void printGST(struct GSTable *g)
 		while (curr)
 		{
 			printf("Varname		DataType		TypeOfVar		Size		BindingAddr\n");
-			printf("%s		%d			%d			%d		%d\n", curr->varname, curr->type, curr->type_of_var, curr->size, curr->binding_addr);
+			printf("%s		%s			%d			%d		%d\n", curr->varname, curr->type->name, curr->type_of_var, curr->size, curr->binding_addr);
 			printf("LST of \"%s\":\n", curr->varname);
 			printLST(curr->lst);
 			printf("ParamList of \"%s\":\n", curr->varname);
@@ -466,7 +485,7 @@ void printGST(struct GSTable *g)
 //-----------------------------------------------------------------------------------
 
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
-struct AST_Node *makeTreeNode(int nodetype, int type, char *varname, int oper, int val, struct AST_Node *l, struct AST_Node *r, struct GSTNode *gst, char *s)
+struct AST_Node *makeTreeNode(int nodetype, struct TypeTableNode *type, char *varname, int oper, int val, struct AST_Node *l, struct AST_Node *r, struct GSTNode *gst, char *s)
 {
 	struct AST_Node *newn = (struct AST_Node *)malloc(sizeof(struct AST_Node));
 	newn->nodetype = nodetype;
@@ -580,21 +599,21 @@ reg_idx freeReg()
 //-------------------------------Auxiliary Functions---------------------------------
 int typeCheckExp(struct AST_Node *l)
 {
-	if (l->type == INTEGER)
+	if (l->type == TypeTableLookUp(T, "int"))
 		return 1;
 	return 0;
 }
 
 int typeCheckBool(struct AST_Node *l)
 {
-	if (l->type == BOOLEAN)
+	if (l->type == TypeTableLookUp(T, "boolean"))
 		return 1;
 	return 0;
 }
 
 int typeCheckStr(struct AST_Node *l)
 {
-	if (l->type == STRING)
+	if (l->type == TypeTableLookUp(T, "str"))
 		return 1;
 	return 0;
 }
@@ -665,6 +684,20 @@ int getFunctionLabel(struct GSTable *gst, char *fname)
 {
 	return (GSTLookUp(gst, fname)->binding_addr);
 }
+
+int DataTypeDefined(struct TypeTable *T, char *name)
+{
+	if (T->head == NULL)
+		return 0;
+	struct TypeTableNode *curr = T->head;
+	while (curr)
+	{
+		if (strcmp(curr->name, name) == 0)
+			return 1;
+		curr = curr->next;
+	}
+	return 0;
+}
 //-----------------------------------------------------------------------------------
 
 //---------------------------------------CodeGen Stack-------------------------------
@@ -723,19 +756,73 @@ int StackGetSize(struct Stack *s)
 }
 //-------------------------------------------------------------------------------
 
+//---------------------------------------String Stack-------------------------------
+struct StringStackNode *init_StringStackNode(char *str)
+{
+	struct StringStackNode *newn = (struct StringStackNode *)malloc(sizeof(struct StringStackNode));
+	newn->str = (char *)malloc(sizeof(char) * strlen(str));
+	newn->str = strdup(str);
+	newn->next = NULL;
+	return newn;
+}
+
+struct StringStack *init_StringStack()
+{
+	struct StringStack *newn = (struct StringStack *)malloc(sizeof(struct StringStack));
+	newn->head = NULL;
+	newn->size = 0;
+	return newn;
+}
+
+struct StringStack *push_string(struct StringStack *stack, char *str)
+{
+	if (stack->head == NULL)
+		stack->head = init_StringStackNode(str);
+	else
+	{
+		struct StringStackNode *temp = init_StringStackNode(str);
+		temp->next = stack->head;
+		stack->head = temp;
+	}
+	stack->size++;
+	return stack;
+}
+
+struct StringStack *pop_string(struct StringStack *stack)
+{
+	struct StringStackNode *temp = stack->head;
+	stack->head = temp->next;
+	stack->size--;
+	return stack;
+}
+
+char *top_string(struct StringStack *stack)
+{
+	return (stack->head->str);
+}
+
+int StringStackGetSize(struct StringStack *s)
+{
+	if (s)
+		return s->size;
+	else
+		return 0;
+}
+//-------------------------------------------------------------------------------
+
 //-------------------------------Code Generation-- -----------------------------------
 reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
 {
 	if (root->nodetype == CONSTANT)
 	{
 		reg_idx id = getReg();
-		if (root->type == INTEGER)
+		if (root->type == TypeTableLookUp(T, "int"))
 			fprintf(ft, "MOV R%d, %d\n", id, root->val);
-		else if (root->type == STRING)
+		else if (root->type == TypeTableLookUp(T, "str"))
 			fprintf(ft, "MOV R%d, %s\n", id, root->s);
 		return id;
 	}
-	else if (root->nodetype == VARIABLE && (root->type == INTEGER || root->type == STRING))
+	else if (root->nodetype == VARIABLE && (root->type == TypeTableLookUp(T, "int") || root->type == TypeTableLookUp(T, "str")))
 	{
 		reg_idx id = getReg();
 		reg_idx aRes = getAddress(ft, root->varname, g, l);
@@ -1079,43 +1166,43 @@ void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel
 	if (root)
 	{
 		//for assignment statement
-		if (root->nodetype == STATEMENT && root->type == ASSIGNMENT)
+		if (root->nodetype == ASSIGNMENT)
 		{
 			assignment_code_generator(ft, root, g, l);
 			return;
 		}
 		//for read statement
-		else if (root->nodetype == STATEMENT && root->type == READ)
+		else if (root->nodetype == READ)
 		{
 			read_code_generator(ft, root, g, l);
 			return;
 		}
 		//for write statement
-		else if (root->nodetype == STATEMENT && root->type == WRITE)
+		else if (root->nodetype == WRITE)
 		{
 			write_code_generator(ft, root, g, l);
 			return;
 		}
 		//for if else statement construct
-		else if (root->nodetype == STATEMENT && root->type == IF_ELSE)
+		else if (root->nodetype == IF_ELSE)
 		{
 			if_else_code_generator(ft, root, blabel, clabel, g, l);
 			return;
 		}
 		//for while loop construct
-		else if (root->nodetype == LOOP && root->type == WHILE)
+		else if (root->nodetype == WHILE)
 		{
 			while_code_generator(ft, root, blabel, clabel, g, l);
 			return;
 		}
 		//for do while loop construct
-		else if (root->nodetype == LOOP && root->type == DO_WHILE)
+		else if (root->nodetype == DO_WHILE)
 		{
 			do_while_code_generator(ft, root, blabel, clabel, g, l);
 			return;
 		}
 		//for repeat-until loop construct
-		else if (root->nodetype == LOOP && root->type == REPEAT_UNTIL)
+		else if (root->nodetype == REPEAT_UNTIL)
 		{
 			repeat_until_code_generator(ft, root, blabel, clabel, g, l);
 			return;

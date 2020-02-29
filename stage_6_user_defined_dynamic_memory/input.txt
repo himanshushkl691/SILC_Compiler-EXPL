@@ -1,0 +1,42 @@
+type
+List
+{
+	int size;
+	str size1;
+	List next;
+}
+BST
+{
+	int node;
+	BST left;
+	BST right;
+	List l;
+}
+endtype
+
+decl
+	List list1,list2;
+	BST myset;
+	str f1();
+enddecl
+
+str f1()
+{
+	decl
+	enddecl
+	begin
+		return "hello";
+	end
+}
+
+int main()
+{
+	decl
+		int a,b,c,d,e,f,g;
+		int h,i;
+	enddecl
+	begin
+		write(f1());
+		return 0;
+	end
+}

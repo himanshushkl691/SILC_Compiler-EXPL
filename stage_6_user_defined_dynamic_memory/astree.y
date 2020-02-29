@@ -9,13 +9,15 @@
     char *yytext;
     FILE *ft;
     struct GSTable *gst;
-    struct GSTNode *temp1;
+    struct GSTNode *gst_node_temp;
     struct LSTable *lst;
-    struct LSTNode *temp3;
+    struct LSTNode *lst_node_temp;
     struct ParamList *Parserparam;
-    struct AST_Node *temp2;
+    struct AST_Node *ast_node_temp;
     struct Stack *stack;
     struct StackNode *tstack;
+    struct FieldList *F;
+    struct TypeTableNode *RET_TYPE;
     char *keyword[20] = {"begin", "end", "read", "write", "if", "else", "then", "endif", "while", "do", "endwhile", "repeat", "until", "int", "str", "decl", "enddecl", "break", "continue", "breakpoint"};
 %}
 
@@ -26,16 +28,17 @@
 /**/
 %type <node> _BREAK _CONTINUE _BREAKPOINT
 %type <node> GDeclBlock GDeclList GDecl GIdList GId
-%type <node> LDecl LDeclBlock LDeclList IdList Type _INT _STR
+%type <node> LDecl LDeclBlock LDeclList IdList Type
+%type <node> TypeDefBlock   TypeDefList TypeDef FieldDeclList   FieldDecl
 %type <node> Param ParamList ArgList
 %type <node> FnDef FnDefBlock MainBlock
 %type <node> Program
 %type <node> Body Slist stmt Inputstmt Outputstmt Assgstmt Ifstmt Whilestmt RepeatUntil DoWhile
 %type <node> _NUM _STRING
-%type <node> expr stringExp _ID id _END
+%type <node> expr stringExp _ID id _END _INT    _STR
 /*TOKENS*/
 //declaration
-%token _DECL _ENDDECL
+%token _DECL _ENDDECL   _TYPE   _ENDTYPE
 //operator
 %token _PLUS _MINUS _MUL _DIV _MOD
 //constants and identifiers
@@ -55,7 +58,7 @@
 //repeat-until
 %token _REPEAT _UNTIL
 //break, continue, breakpoint
-%token _BREAK _CONTINUE _BREAKPOINT _MAIN   _RETURN
+%token _BREAK _CONTINUE _BREAKPOINT _MAIN   _RETURN _NULL
 /*ASSOCIATIVITY*/
 %left _LT _LE
 %left _GT _GE
@@ -69,229 +72,269 @@
 //---------------------------Rules----------------------------
 
 //------------------------MainBlock---------------------------
-MainBlock   :   _INT    _MAIN   '(' ')' '{' LDeclBlock  Body    '}'{
-	    								if(RET_TYPE != INTEGER){
-									       	printf("line %d :Return type does not match\n",line);
-								        	exit(1);
-									}
-									RET_TYPE = -1;
-									gst = GSTInstall(gst,INTEGER,FUNCTION,"main",1,NULL,NULL);
-									temp1 = GSTLookUp(gst,"main");
-									temp1->lst = lst;
-									lst = LSTDelete(lst);
-									$$ = makeTreeNode(FUNCTION,INTEGER,"main",-1,-1,$7,NULL,temp1,"main");									      printGST(gst);
-									ASTPrintTree($$);
-									printf("\n");
-									stack = push(stack,$$,temp1->lst);
-									$$ = ASTDelete($$);
-								};
+MainBlock   :   _INT    _MAIN   '(' ')' '{' LDeclBlock  Body    '}'
+                                            {
+                                                if(RET_TYPE != TypeTableLookUp(T,"int"))
+                                                {
+                                                    printf("line %d :Return type does not match\n",line);
+                                                    exit(1);
+                                                }
+                                                RET_TYPE = NULL;
+                                                gst = GSTInstall(gst,TypeTableLookUp(T,"int"),FUNCTION,"main",1,Parserparam,lst);
+                                                gst_node_temp = GSTLookUp(gst,"main");
+                                                gst_node_temp->lst = lst;
+                                                lst = LSTDelete(lst);
+                                                $$ = makeTreeNode(FUNCTION,TypeTableLookUp(T,"int"),"main",-1,-1,$7,NULL,gst_node_temp,"main");
+                                                Parserparam = ParamDelete(Parserparam);
+                                                printGST(gst);
+                                                ASTPrintTree($$);
+                                                printf("\n");
+                                                stack = push(stack,$$,gst_node_temp->lst);
+                                                $$ = ASTDelete($$);
+                                            }
+;
 
 //-------------------------Body-------------------------------
 Body    :   _BEGIN  Slist   _RETURN stringExp ';'   _END{
 								RET_TYPE = $4->type;
-								temp2 = makeTreeNode(RETURN,RETURN,NULL,-1,-1,$4,NULL,NULL,"RETURN");
-								$$ = makeTreeNode(STATEMENT,STATEMENT,NULL,-1,-1,$2,temp2,NULL,"STATEMENT");
+								ast_node_temp = makeTreeNode(RETURN,TypeTableLookUp(T,"void"),NULL,-1,-1,$4,NULL,NULL,"RETURN");
+								$$ = makeTreeNode(STATEMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,$2,ast_node_temp,NULL,"STATEMENT");
 							}
 |   _BEGIN  _RETURN stringExp   ';' _END    		{
 								RET_TYPE = $3->type;
-								temp2 = makeTreeNode(RETURN,RETURN,NULL,-1,-1,$3,NULL,NULL,"RETURN");
-								$$ = makeTreeNode(STATEMENT,STATEMENT,NULL,-1,-1,NULL,temp2,NULL,"STATEMENT");
+								ast_node_temp = makeTreeNode(RETURN,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,NULL,NULL,"RETURN");
+								$$ = makeTreeNode(STATEMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,ast_node_temp,NULL,"STATEMENT");
 							};
 
 //-------------------------Program----------------------------
-Program :   GDeclBlock   FnDefBlock   MainBlock 	{
-								$$ = NULL;
-								printf("Parsing Completed\n");
-								generateHeader(ft);
-								int i = 0;
-								while(StackGetSize(stack)){
-        								tstack = top(stack);
-        								stack = pop(stack);
-									if(i == 0){
-										temp1 = GSTLookUp(gst,"main");
-										fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
-										generateExit(ft);
-										i = 1;
-									}
-									code_generator(ft,tstack->ast,gst,tstack->lst);
-								}
-								exit(1);
-							}
-|   GDeclBlock  MainBlock   				{
-								$$ = NULL;
-								printf("Parsing Completed\n");
-								generateHeader(ft);
-								int i = 0;
-								while(StackGetSize(stack)){
-									tstack = top(stack);
-									stack = pop(stack);
-									if(i == 0){
-										temp1 = GSTLookUp(gst,"main");
-										fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
-										generateExit(ft);
-										i = 1;
-									}
-        								code_generator(ft,tstack->ast,gst,tstack->lst);
-								}
-								exit(1);
-							}
-|   MainBlock						{
-								$$ = NULL;
-								printf("Parsing Completed\n");
-								generateHeader(ft);
-								int i = 0;
-								while(StackGetSize(stack)){
-									tstack = top(stack);
-									stack = pop(stack);
-									if(i == 0){
-										temp1 = GSTLookUp(gst,"main");
-										fprintf(ft,"CALL _F%d\n",temp1->binding_addr);
-										generateExit(ft);
-            									i = 1;
-        								}
-        								code_generator(ft,tstack->ast,gst,tstack->lst);
-    								}
-								exit(1);
-							};
+Program :   TypeDefBlock GDeclBlock   FnDefBlock   MainBlock 	
+                                    {
+                                        $$ = NULL;
+                                        printf("Parsing Completed\n");
+                                        generateHeader(ft);
+                                        int i = 0;
+                                        while(StackGetSize(stack)){
+                                                tstack = top(stack);
+                                                stack = pop(stack);
+                                            if(i == 0){
+                                                gst_node_temp = GSTLookUp(gst,"main");
+                                                fprintf(ft,"CALL _F%d\n",gst_node_temp->binding_addr);
+                                                generateExit(ft);
+                                                i = 1;
+                                            }
+                                            code_generator(ft,tstack->ast,gst,tstack->lst);
+                                        }
+                                        exit(1);
+							        }
+|   TypeDefBlock GDeclBlock  MainBlock   		
+                                    {
+                                        $$ = NULL;
+                                        printf("Parsing Completed\n");
+                                        generateHeader(ft);
+                                        int i = 0;
+                                        while(StackGetSize(stack)){
+                                            tstack = top(stack);
+                                            stack = pop(stack);
+                                            if(i == 0){
+                                                gst_node_temp = GSTLookUp(gst,"main");
+                                                fprintf(ft,"CALL _F%d\n",gst_node_temp->binding_addr);
+                                                generateExit(ft);
+                                                i = 1;
+                                            }
+                                            code_generator(ft,tstack->ast,gst,tstack->lst);
+                                        }
+                                        exit(1);
+							        }
+|   TypeDefBlock MainBlock						
+                                    {
+                                        $$ = NULL;
+                                        printf("Parsing Completed\n");
+                                        generateHeader(ft);
+                                        int i = 0;
+                                        while(StackGetSize(stack)){
+                                            tstack = top(stack);
+                                            stack = pop(stack);
+                                            if(i == 0){
+                                                gst_node_temp = GSTLookUp(gst,"main");
+                                                fprintf(ft,"CALL _F%d\n",gst_node_temp->binding_addr);
+                                                generateExit(ft);
+                                                        i = 1;
+                                                }
+                                            code_generator(ft,tstack->ast,gst,tstack->lst);
+                                        }
+                                        exit(1);
+							        }
+;
+
+//-----------------------Type Definitions---------------------
+TypeDefBlock:                               {}
+|   _TYPE TypeDefList   _ENDTYPE            {printTypeTable(T);}
+;
+TypeDefList:    TypeDefList TypeDef         {}
+|   TypeDef                                 {}
+;
+TypeDef:    _ID '{' FieldDeclList   '}'     {
+                                                T = installTypeTableNode(T,$1->varname,8,F);
+                                                ValidateFieldList(TypeTableLookUp(T,$1->varname));
+                                                F = initFieldList();
+                                            }
+;
+FieldDeclList:  FieldDeclList   FieldDecl   {}
+|   FieldDecl                               {}
+;
+FieldDecl:  Type    _ID    ';'         {F = installField(T,F,$2->varname,top_string(TYPE_STACK));TYPE_STACK = pop_string(TYPE_STACK);}
+;
 
 //-----------------------Global Declarations------------------
 GDeclBlock  :   _DECL   GDeclList   _ENDDECL    {}
-|   _DECL   _ENDDECL    {}
+|   _DECL   _ENDDECL                            {}
 ;
-GDeclList   :   GDeclList   GDecl   {}
-|   GDecl   {}
+GDeclList   :   GDeclList   GDecl               {}
+|   GDecl                                       {}
 ;
-GDecl   :   Type    GIdList ';' {}
+GDecl   :   Type    GIdList ';'                 {TYPE_STACK = pop_string(TYPE_STACK);}
 ;
-GIdList :   GIdList ',' GId {}
-|   GId {}
+GIdList :   GIdList ',' GId                     {}
+|   GId                                         {}
 ;
-GId :   _ID						{
-								gst = GSTInstall(gst,TYPE,VARIABLE,$1->varname,1,NULL,NULL);
-							}
-|   _ID '[' _NUM    ']'					{
-								gst = GSTInstall(gst,TYPE,ARRAY_VARIABLE,$1->varname,$3->val,NULL,NULL);
-							}
-|   _ID '(' ParamList   ')'				{
-								gst = GSTInstall(gst,TYPE,FUNCTION,$1->varname,1,Parserparam,NULL);
-								Parserparam = ParamDelete(Parserparam);
-							}
-|   _ID '(' ')'						{
-								gst = GSTInstall(gst,TYPE,FUNCTION,$1->varname,1,NULL,NULL);
-							};
+GId :   _ID						                {
+								                    gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),VARIABLE,$1->varname,1,NULL,lst);
+                                                    lst = LSTDelete(lst);
+							                    }
+|   _ID '[' _NUM    ']'					        {
+								                    gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),ARRAY_VARIABLE,$1->varname,$3->val,NULL,lst);
+                                                    lst = LSTDelete(lst);
+							                    }
+|   _ID '(' ParamList   ')'				        {
+                                                    gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),FUNCTION,$1->varname,1,Parserparam,lst);
+                                                    lst = LSTDelete(lst);
+                                                    Parserparam = ParamDelete(Parserparam);
+							                    }
+|   _ID '(' ')'						            {
+								                    gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),FUNCTION,$1->varname,1,Parserparam,lst);
+                                                    lst = LSTDelete(lst);
+                                                    Parserparam = ParamDelete(Parserparam);
+							                    }
+;
 
 //------------------------Function Defition-------------------
-FnDefBlock  :   FnDefBlock  FnDef   {}
-|   FnDef   {}
+FnDefBlock  :   FnDefBlock  FnDef               {}
+|   FnDef                                       {}
 ;
-FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'{
-										temp1 = GSTLookUp(gst,$2->varname);
-										if(!temp1){
-											printf("line %d :\"%s\" function not declared\n",line,$2->varname);
-											exit(1);
-										}
-										if($1->type != temp1->type){
-        printf("line %d :Invalid return type for \"%s\"\n",line,$2->varname);
-        exit(1);
-    }
-    if(!checkParamList(Parserparam,temp1->param)){
-        printf("line %d :Number of Formal Arguments does not match with declaration\n",line);
-        exit(1);
-    }
-    if(RET_TYPE != temp1->type){
-        printf("line %d :Return type does not match\n",line);
-        exit(1);
-    }
-    RET_TYPE = -1;
-    temp1->lst = lst;
-    lst = LSTDelete(lst);
-    Parserparam = ParamDelete(Parserparam);
-    $$ = makeTreeNode(FUNCTION,INTEGER,$2->varname,-1,-1,$8,NULL,temp1,"FUNCTION");
-    printGST(gst);
-    ASTPrintTree($$);
-    printf("\n");
-    stack = push(stack,$$,temp1->lst);
-    $$ = ASTDelete($$);
-}
-|   Type    _ID '(' ')' '{' LDeclBlock  Body    '}' {
-    temp1 = GSTLookUp(gst,$2->varname);
-    if(!temp1){
-        printf("line %d :\"%s\" function not declared\n",line,$2->varname);
-        exit(1);
-    }
-    if($1->type != temp1->type){
-        printf("line %d :Invalid return type for \"%s\"\n",line,$2->varname);
-        exit(1);
-    }
-    if(!checkParamList(Parserparam,temp1->param)){
-        printf("line %d :Number of Formal Arguments does not match with declaration\n",line);
-        exit(1);
-    }
-    if(RET_TYPE != temp1->type){
-        printf("line %d :Return type does not match\n",line);
-        exit(1);
-    }
-    RET_TYPE = -1;
-    temp1->lst = lst;
-    lst = LSTDelete(lst);
-    Parserparam = ParamDelete(Parserparam);
-    $$ = makeTreeNode(FUNCTION,INTEGER,$2->varname,-1,-1,$7,NULL,temp1,"FUNCTION");
-    printGST(gst);
-    ASTPrintTree($$);
-    printf("\n");
-    stack = push(stack,$$,temp1->lst);
-    $$ = ASTDelete($$);
-}
+FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'
+                                            {
+                                                gst_node_temp = GSTLookUp(gst,$2->varname);
+                                                if(!gst_node_temp){
+                                                    printf("line %d :\"%s\" function not declared\n",line,$2->varname);
+                                                    exit(1);
+                                                }
+                                                if(TypeTableLookUp(T,top_string(TYPE_STACK)) != gst_node_temp->type){
+                                                    printf("line %d :Invalid return type for \"%s\"\n",line,$2->varname);
+                                                    exit(1);
+                                                }
+                                                if(!checkParamList(Parserparam,gst_node_temp->param)){
+                                                    printf("line %d :Number of Formal Arguments does not match with declaration\n",line);
+                                                    exit(1);
+                                                }
+                                                if(RET_TYPE != gst_node_temp->type){
+                                                    printf("*line %d :Return type does not match\n",line);
+                                                    exit(1);
+                                                }
+                                                RET_TYPE = NULL;
+                                                gst_node_temp->lst = lst;
+                                                lst = LSTDelete(lst);
+                                                Parserparam = ParamDelete(Parserparam);
+                                                $$ = makeTreeNode(FUNCTION,TypeTableLookUp(T,top_string(TYPE_STACK)),$2->varname,-1,-1,$8,NULL,gst_node_temp,"FUNCTION");
+                                                TYPE_STACK = pop_string(TYPE_STACK);
+                                                printGST(gst);
+                                                ASTPrintTree($$);
+                                                printf("\n");
+                                                stack = push(stack,$$,gst_node_temp->lst);
+                                                $$ = ASTDelete($$);
+                                            }
+|   Type    _ID '(' ')' '{' LDeclBlock  Body    '}' 
+                                            {
+                                                gst_node_temp = GSTLookUp(gst,$2->varname);
+                                                if(!gst_node_temp){
+                                                    printf("line %d :\"%s\" function not declared\n",line,$2->varname);
+                                                    exit(1);
+                                                }
+                                                if(TypeTableLookUp(T,top_string(TYPE_STACK)) != gst_node_temp->type){
+                                                    printf("line %d :Invalid return type for \"%s\"\n",line,$2->varname);
+                                                    exit(1);
+                                                }
+                                                if(!checkParamList(Parserparam,gst_node_temp->param)){
+                                                    printf("line %d :Number of Formal Arguments does not match with declaration\n",line);
+                                                    exit(1);
+                                                }
+                                                if(RET_TYPE != gst_node_temp->type){
+                                                    printf("line %d :Return type does not match\n",line);
+                                                    exit(1);
+                                                }
+                                                RET_TYPE = NULL;
+                                                gst_node_temp->lst = lst;
+                                                lst = LSTDelete(lst);
+                                                Parserparam = ParamDelete(Parserparam);
+                                                $$ = makeTreeNode(FUNCTION,TypeTableLookUp(T,top_string(TYPE_STACK)),$2->varname,-1,-1,$7,NULL,gst_node_temp,"FUNCTION");
+                                                TYPE_STACK = pop_string(TYPE_STACK);
+                                                printGST(gst);
+                                                ASTPrintTree($$);
+                                                printf("\n");
+                                                stack = push(stack,$$,gst_node_temp->lst);
+                                                $$ = ASTDelete($$);
+                                            }
 ;
 
 //-------------------------Parameter List---------------------
 ParamList   :   ParamList   ',' Param   {}
-|   Param   {}
+|   Param                               {}
 ;
-Param   :   Type    _ID {Parserparam = ParamInsert(Parserparam,$2->varname,TYPE,VARIABLE);}
+Param   :   Type    _ID {
+                            Parserparam = ParamInsert(Parserparam,$2->varname,TypeTableLookUp(T,top_string(TYPE_STACK)),VARIABLE);
+                            TYPE_STACK = pop_string(TYPE_STACK);
+                        }
 ;
 
 //-----------------------Local Declaration--------------------
 LDeclBlock  :   _DECL   LDeclList   _ENDDECL    {
-    lst = ParamToLSTInstall(lst,Parserparam);
-    TYPE = -1;
-}
-|   _DECL   _ENDDECL    {
-    lst = ParamToLSTInstall(lst,Parserparam);
-    TYPE = -1;
-}
+                                                    lst = ParamToLSTInstall(lst,Parserparam);
+                                                }
+|   _DECL   _ENDDECL                            {
+                                                    lst = ParamToLSTInstall(lst,Parserparam);
+                                                }
 ;
-LDeclList   :   LDeclList   LDecl   {}
-|   LDecl   {}
+LDeclList   :   LDeclList   LDecl               {}
+|   LDecl                                       {}
 ;
-LDecl   :   Type    IdList  ';' {}
+LDecl   :   Type    IdList  ';'                 {TYPE_STACK = pop_string(TYPE_STACK);}
 ;
-IdList  :   IdList  ',' _ID {
-    lst = LSTInstall(lst,$3->varname,TYPE,VARIABLE);
-}
-|   _ID {
-    lst = LSTInstall(lst,$1->varname,TYPE,VARIABLE);
-}
+IdList  :   IdList  ',' _ID                     {
+                                                    lst = LSTInstall(lst,$3->varname,TypeTableLookUp(T,top_string(TYPE_STACK)),VARIABLE);
+                                                }
+|   _ID                                         {
+                                                    lst = LSTInstall(lst,$1->varname,TypeTableLookUp(T,top_string(TYPE_STACK)),VARIABLE);
+                                                }
 ;
 
 //----------------------ArgList---------------------------
-ArgList :   ArgList ',' stringExp   {
-    $1 = insertASTParam($1,$3);
-    $$ = $1;
-}
-|   stringExp   {
-    $$ = $1;
-}
+ArgList :   ArgList ',' stringExp               {
+                                                    $1 = insertASTParam($1,$3);
+                                                    $$ = $1;
+                                                }
+|   stringExp                                   {
+                                                    $$ = $1;
+                                                }
 ;
 
 //-----------------------Type-----------------------------
-Type    :   _INT    {TYPE = INTEGER;$$ = $1;}
-|   _STR    {TYPE = STRING;$$ = $1;}
+Type    :   _INT                {TYPE_STACK = push_string(TYPE_STACK,"int");}
+|   _STR                        {TYPE_STACK = push_string(TYPE_STACK,"str");}
+|   _ID                         {TYPE_STACK = push_string(TYPE_STACK,$1->varname);}
 ;
 
 //-----------------------Statement List-------------------
 Slist:  Slist stmt{
-    $$ = makeTreeNode(STATEMENT,STATEMENT,NULL,-1,-1,$1,$2,NULL,"STATEMENT");
+    $$ = makeTreeNode(STATEMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,$1,$2,NULL,"STATEMENT");
 }
 |   stmt  {
         $$ = $1;
@@ -330,15 +373,15 @@ stmt:	Inputstmt {
 }
 ;
 Inputstmt:  _READ '(' id ')' ';'{
-    $$ = makeTreeNode(STATEMENT,READ,NULL,-1,-1,$3,NULL,NULL,"Read");
+    $$ = makeTreeNode(READ,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,NULL,NULL,"Read");
 }
 ;
 Outputstmt: _WRITE '(' stringExp ')' ';' {
-    	$$ = makeTreeNode(STATEMENT,WRITE,NULL,-1,-1,$3,NULL,NULL,"Write");
+    	$$ = makeTreeNode(WRITE,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,NULL,NULL,"Write");
 };
 Assgstmt:   id '=' stringExp ';'{
     if(((typeCheckExp($1) && typeCheckExp($3)) || (typeCheckStr($1) && typeCheckStr($3))) && ($1->nodetype != FUNCTION))
-	    $$ = makeTreeNode(STATEMENT,ASSIGNMENT,NULL,-1,-1,$1,$3,NULL,"=");
+	    $$ = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,$1,$3,NULL,"=");
     else{
         printf("line %d :Invalid assignment to \"%s\"\n",line,$1->varname);
         exit(1);
@@ -350,25 +393,25 @@ stringExp:  expr    {$$ = $1;}
 ;
 Ifstmt:	_IF '(' expr ')' _THEN Slist _ELSE Slist _ENDIF ';'{
     if(!typeCheckBool($3)){
-        printf("Invalid boolean statement\n");
+        printf("line %d: Invalid conditional statement\n",line);
         exit(1);
     }
-    struct AST_Node *temp1 = makeTreeNode(STATEMENT,IF,NULL,-1,-1,$3,$6,NULL,"IF");
-	struct AST_Node *temp2 = makeTreeNode(STATEMENT,ELSE,NULL,-1,-1,$8,NULL,NULL,"ELSE");
-	$$ = makeTreeNode(STATEMENT,IF_ELSE,NULL,-1,-1,temp1,temp2,NULL,"IF_ELSE");
+    struct AST_Node *temp1 = makeTreeNode(IF,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,$6,NULL,"IF");
+	struct AST_Node *temp2 = makeTreeNode(ELSE,TypeTableLookUp(T,"void"),NULL,-1,-1,$8,NULL,NULL,"ELSE");
+	$$ = makeTreeNode(IF_ELSE,TypeTableLookUp(T,"void"),NULL,-1,-1,temp1,temp2,NULL,"IF_ELSE");
 }
 |	_IF '(' expr ')' _THEN Slist _ENDIF ';'{
     if(!typeCheckBool($3)){
         printf("line %d :Invalid boolean statement\n",line);
         exit(1);
     }
-	struct AST_Node *temp1 = makeTreeNode(STATEMENT,IF,NULL,-1,-1,$3,$6,NULL,"IF");
-	$$ = makeTreeNode(STATEMENT,IF_ELSE,NULL,-1,-1,temp1,NULL,NULL,"IF_ELSE");
+	struct AST_Node *temp1 = makeTreeNode(IF,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,$6,NULL,"IF");
+	$$ = makeTreeNode(IF_ELSE,TypeTableLookUp(T,"void"),NULL,-1,-1,temp1,NULL,NULL,"IF_ELSE");
 }
 ;
 Whilestmt: _WHILE '(' expr ')' _DO Slist _ENDWHILE ';'{
     if(typeCheckBool($3))
-	    $$ = makeTreeNode(LOOP,WHILE,NULL,-1,-1,$3,$6,NULL,"WHILE");
+	    $$ = makeTreeNode(WHILE,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,$6,NULL,"WHILE");
     else{
         printf("line %d :Invalid bool statement\n",line);
         exit(1);
@@ -377,7 +420,7 @@ Whilestmt: _WHILE '(' expr ')' _DO Slist _ENDWHILE ';'{
 ;
 RepeatUntil:    _REPEAT '{' Slist '}' _UNTIL '(' expr ')' ';'   {
     if(typeCheckBool($7))
-        $$ = makeTreeNode(LOOP,REPEAT_UNTIL,NULL,-1,-1,$3,$7,NULL,"REPEAT_UNTIL");
+        $$ = makeTreeNode(REPEAT_UNTIL,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,$7,NULL,"REPEAT_UNTIL");
     else{
         printf("line %d :Invalid bool statement\n",line);
         exit(1);
@@ -386,7 +429,7 @@ RepeatUntil:    _REPEAT '{' Slist '}' _UNTIL '(' expr ')' ';'   {
 ;
 DoWhile:    _DO '{' Slist '}' _WHILE '(' expr ')' ';'   {
     if(typeCheckBool($7))
-        $$ = makeTreeNode(LOOP,DO_WHILE,NULL,-1,-1,$3,$7,NULL,"DO_WHILE");
+        $$ = makeTreeNode(DO_WHILE,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,$7,NULL,"DO_WHILE");
     else{
         printf("line %d :Invalid bool statement\n",line);
         exit(1);
@@ -396,7 +439,7 @@ DoWhile:    _DO '{' Slist '}' _WHILE '(' expr ')' ';'   {
 //--------------------------Expressions-----------------------
 expr:   expr _PLUS  expr    {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,INTEGER,NULL,PLUS,-1,$1,$3,NULL,"+");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,PLUS,-1,$1,$3,NULL,"+");
     else{
         printf("line %d :Invalid operand\n",line);
         exit(1);
@@ -404,7 +447,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _MINUS expr     {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,INTEGER,NULL,MINUS,-1,$1,$3,NULL,"-");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MINUS,-1,$1,$3,NULL,"-");
     else{
         printf("line %d :Invalid operand\n",line);
         exit(1);
@@ -412,7 +455,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _MUL expr   {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,INTEGER,NULL,MUL,-1,$1,$3,NULL,"*");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MUL,-1,$1,$3,NULL,"*");
     else{
         printf("line %d :Invalid operand\n",line);
         exit(1);
@@ -420,7 +463,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _DIV expr   {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,INTEGER,NULL,DIV,-1,$1,$3,NULL,"/");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,DIV,-1,$1,$3,NULL,"/");
     else{
         printf("line %d :Invalid operand\n",line);
         exit(1);
@@ -428,7 +471,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _MOD expr {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,INTEGER,NULL,MOD,-1,$1,$3,NULL,"%");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MOD,-1,$1,$3,NULL,"%");
     else{
         printf("line %d :Invalid operand\n",line);
         exit(1);
@@ -436,7 +479,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _LT expr   {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,LT,-1,$1,$3,NULL,"<");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,LT,-1,$1,$3,NULL,"<");
     else{
         printf("line %d :Invalid Operator\n",line);
         exit(1);
@@ -444,7 +487,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _LE expr   {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,LE,-1,$1,$3,NULL,"<=");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,LE,-1,$1,$3,NULL,"<=");
     else{
         printf("line %d :Invalid Operator\n",line);
         exit(1);
@@ -452,7 +495,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _GT expr   {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,GT,-1,$1,$3,NULL,">");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,GT,-1,$1,$3,NULL,">");
     else{
         printf("line %d :Invalid Operator\n",line);
         exit(1);
@@ -460,7 +503,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _GE expr   {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,GE,-1,$1,$3,NULL,">=");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,GE,-1,$1,$3,NULL,">=");
     else{
         printf("line %d :Invalid Operator\n",line);
         exit(1);
@@ -468,7 +511,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _NE expr   {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,NE,-1,$1,$3,NULL,"!=");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,$1,$3,NULL,"!=");
     else{
         printf("line %d :Invalid Operator\n",line);
         exit(1);
@@ -476,7 +519,7 @@ expr:   expr _PLUS  expr    {
 }
 |   expr _EQ expr   {
     if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,BOOLEAN,NULL,EQ,-1,$1,$3,NULL,"==");
+        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,$1,$3,NULL,"==");
     else{
         printf("line %d :Invalid Operator\n",line);
         exit(1);
@@ -487,75 +530,100 @@ expr:   expr _PLUS  expr    {
 }
 |   _NUM    {$$ = $1;}
 |   id  {$$ = $1;}
+|   Field   {$$ = $1;}
 ;
 //----------------------------Identifiers-----------------------
 id: _ID {
     $$ = $1;
-    temp3 = LSTLookUp(lst,$1->varname);
-    if(temp3)
-        $$->type = temp3->type;
+    lst_node_temp = LSTLookUp(lst,$1->varname);
+    if(lst_node_temp)
+        $$->type = lst_node_temp->type;
     else{
-        temp1 = GSTLookUp(gst,$1->varname);
-        if(!temp1){
+        gst_node_temp = GSTLookUp(gst,$1->varname);
+        if(!gst_node_temp){
             printf("line %d :Variable \"%s\" not declared\n",line,$$->varname);
             exit(1);
         }
         else
-            $$->type = temp1->type;
+            $$->type = gst_node_temp->type;
     }
 }
 |   _ID '[' expr ']' {
-    if($3->type != INTEGER){
+    if($3->type != TypeTableLookUp(T,"int")){
         printf("line %d :Invalid index\n",line);
         exit(1);
     }
-    temp3 = LSTLookUp(lst,$1->varname);
-    if(temp3){
-        if(temp3->type_of_var != ARRAY_VARIABLE){
+    lst_node_temp = LSTLookUp(lst,$1->varname);
+    if(lst_node_temp){
+        if(lst_node_temp->type_of_var != ARRAY_VARIABLE){
             printf("line %d :Variable \"%s\" not of array type\n",line,$1->varname);
             exit(1);
         }
-        $1->type = temp3->type;
+        $1->type = lst_node_temp->type;
         $$ = makeTreeNode(ARRAY_VARIABLE,$1->type,$1->varname,-1,-1,$1,$3,NULL,"ARRAY_VARIABLE");
     }
     else{
-        temp1 = GSTLookUp(gst,$1->varname);
-        if(!temp1)
+        gst_node_temp = GSTLookUp(gst,$1->varname);
+        if(!gst_node_temp)
         {
             printf("line %d :Variable \"%s\" not declared\n",line,$1->varname);
             exit(1);            
         }
         else{
-            if(temp1->type_of_var != ARRAY_VARIABLE){
+            if(gst_node_temp->type_of_var != ARRAY_VARIABLE){
                 printf("line %d :Variable \"%s\" not of array type\n",line,$1->varname);
                 exit(1);
             }
-            $1->type = temp1->type;
-            $$ = makeTreeNode(ARRAY_VARIABLE,$1->type,$1->varname,-1,-1,$1,$3,temp1,"ARRAY_VARIABLE");
+            $1->type = gst_node_temp->type;
+            $$ = makeTreeNode(ARRAY_VARIABLE,$1->type,$1->varname,-1,-1,$1,$3,gst_node_temp,"ARRAY_VARIABLE");
         }
     }
 }
 |   _ID '(' ArgList ')' {
-    temp1 = GSTLookUp(gst,$1->varname);
-    if(!temp1){
+    gst_node_temp = GSTLookUp(gst,$1->varname);
+    if(!gst_node_temp){
         printf("line %d :Function \"%s\" not declared\n",line,$1->varname);
         exit(1);
     }
-    if(temp1->type_of_var != FUNCTION){
+    if(gst_node_temp->type_of_var != FUNCTION){
         printf("line %d :\"%s\" not a function\n",line,$1->varname);
         exit(1);
     }
-    if(!checkASTParam(temp1->param,$3)){
+    if(!checkASTParam(gst_node_temp->param,$3)){
         printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,$1->varname);
         exit(1);
     }
     $1->nodetype = FUNCTION;
-    $1->type = temp1->type;
+    $1->type = gst_node_temp->type;
     $1->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
     $1->param = $3;
     $3 = NULL;
     $$ = $1;
 }
+|   _ID '(' ')' {
+    gst_node_temp = GSTLookUp(gst,$1->varname);
+    if(!gst_node_temp){
+        printf("line %d :Function \"%s\" not declared\n",line,$1->varname);
+        exit(1);
+    }
+    if(gst_node_temp->type_of_var != FUNCTION){
+        printf("line %d :\"%s\" not a function\n",line,$1->varname);
+        exit(1);
+    }
+    if(gst_node_temp->param->size != 0){
+        printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,$1->varname);
+        exit(1);
+    }
+    $1->nodetype = FUNCTION;
+    $1->type = gst_node_temp->type;
+    $1->param = NULL;
+    $$ = $1;
+}
+;
+
+//----------------------------Field-------------------------
+Field:  Field   '.' _ID
+|   _ID '.' _ID
 ;
 %%
 //-------------------------Auxiliary Functions--------------------------
@@ -567,12 +635,14 @@ void yyerror(const char *err){
 int main(int argc,char *argv[]){
     gst = init_GSTable();
     lst = init_LSTable();
+    T = initTypeTable();
+    F = initFieldList();
+    TYPE_STACK = init_StringStack();
     Parserparam = init_ParamList();
     stack = init_Stack();
     ADDR = 4096;
     LABEL = 0;
-    TYPE = -1;
-    RET_TYPE = -1;
+    RET_TYPE = NULL;
     line = 1;
     if(argc > 1){
 		printf("Generating file as %s\n",argv[1]);

@@ -46,12 +46,12 @@
 
 #define ARGUMENT 37
 #define RETURN 38
+#define NULL_ 39
+#define FIELD 40
 
 int ADDR;
 int LABEL;
 int line;
-int TYPE;
-int RET_TYPE;
 
 //------------------------------------Static Storage Allocation---------------------------
 //returns next available address
@@ -80,7 +80,7 @@ struct TypeTable
 {
     struct TypeTableNode *head, *tail;
     int entry;
-};
+} * T;
 
 struct TypeTableNode *newTypeTableNode(char *, int, struct FieldList *);
 struct TypeTable *initTypeTable();
@@ -119,7 +119,7 @@ void printFieldList(struct FieldList *);
 struct ParamNode
 {
     char *varname;
-    int type;
+    struct TypeTableNode *type;
     int type_of_var;
     struct ParamNode *next;
 };
@@ -131,9 +131,9 @@ struct ParamList
     int size;
 };
 
-struct ParamNode *init_ParamNode(char *, int, int);
+struct ParamNode *init_ParamNode(char *, struct TypeTableNode *, int);
 struct ParamList *init_ParamList();
-struct ParamList *ParamInsert(struct ParamList *, char *, int, int);
+struct ParamList *ParamInsert(struct ParamList *, char *, struct TypeTableNode *, int);
 struct ParamList *ParamDelete(struct ParamList *h);
 void printParamList(struct ParamList *);
 int ParamGetSize(struct ParamList *);
@@ -142,7 +142,7 @@ int ParamGetSize(struct ParamList *);
 //-----------------------------------------Local Symbol Table-----------------------------------------------
 struct LSTNode
 {
-    int type;
+    struct TypeTableNode *type;
     int type_of_var;
     char *varname;
     int binding_addr;
@@ -156,9 +156,9 @@ struct LSTable
     int size;
 };
 
-struct LSTNode *init_LSTNode(int, int, char *, int);
+struct LSTNode *init_LSTNode(struct TypeTableNode *, int, char *, int);
 struct LSTable *init_LSTable();
-struct LSTable *LSTInstall(struct LSTable *, char *, int, int);
+struct LSTable *LSTInstall(struct LSTable *, char *, struct TypeTableNode *, int);
 struct LSTNode *LSTLookUp(struct LSTable *, char *);
 struct LSTable *LSTDelete(struct LSTable *);
 void printLST(struct LSTable *);
@@ -168,7 +168,7 @@ int LSTGetSize(struct LSTable *);
 //-----------------------------------------Global Symbol Table----------------------------------------------
 struct GSTNode
 {
-    int type;
+    struct TypeTableNode *type;
     int type_of_var;
     char *varname;
     int binding_addr;
@@ -187,11 +187,11 @@ struct GSTable
 //for creating new global symbol table
 struct GSTable *init_GSTable();
 //for creating new node
-struct GSTNode *init_GSTNode(int, int, char *, int, struct ParamList *, struct LSTable *);
+struct GSTNode *init_GSTNode(struct TypeTableNode *, int, char *, int, struct ParamList *, struct LSTable *);
 //checks whether id is already present in symbol table if it is, it returns pointer to it o/w NULL
 struct GSTNode *GSTLookUp(struct GSTable *, char *);
 //installs identifier in symbol table
-struct GSTable *GSTInstall(struct GSTable *, int, int, char *, int, struct ParamList *, struct LSTable *);
+struct GSTable *GSTInstall(struct GSTable *, struct TypeTableNode *, int, char *, int, struct ParamList *, struct LSTable *);
 //for deleting GSTable
 struct GSTable *GSTDelete(struct GSTable *);
 //for getting size of global symbol table
@@ -204,7 +204,7 @@ void printGST(struct GSTable *);
 struct AST_Node
 {
     int nodetype;
-    int type;
+    struct TypeTableNode *type;
     char *varname;
     int oper;
     int val;
@@ -216,7 +216,7 @@ struct AST_Node
 };
 
 //function declaration for Abstract Syntax Tree
-struct AST_Node *makeTreeNode(int, int, char *, int, int, struct AST_Node *, struct AST_Node *, struct GSTNode *, char *);
+struct AST_Node *makeTreeNode(int, struct TypeTableNode *, char *, int, int, struct AST_Node *, struct AST_Node *, struct GSTNode *, char *);
 //for printing syntax tree
 void ASTPrintTree(struct AST_Node *);
 //for printing argument list attached to function call node
@@ -236,6 +236,7 @@ struct LSTable *ParamToLSTInstall(struct LSTable *, struct ParamList *);
 int checkASTParam(struct ParamList *, struct AST_Node *);
 int checkParamList(struct ParamList *p1, struct ParamList *p2);
 struct AST_Node *insertASTParam(struct AST_Node *, struct AST_Node *);
+int DataTypeDefined(struct TypeTable *, char *);
 //---------------------------------------------------------------------------------------------
 
 //-----------------------------------------Register Allocation Strategy---------------------------------------------------
@@ -269,6 +270,27 @@ struct Stack *push(struct Stack *, struct AST_Node *, struct LSTable *);
 struct Stack *pop(struct Stack *);
 struct StackNode *top(struct Stack *);
 int StackGetSize(struct Stack *);
+//-------------------------------------------------------------------------------
+
+//-------------------------------------String Stack------------------------------
+struct StringStackNode
+{
+    char *str;
+    struct StringStackNode *next;
+};
+
+struct StringStack
+{
+    struct StringStackNode *head;
+    int size;
+} * TYPE_STACK;
+
+struct StringStackNode *init_StringStackNode(char *);
+struct StringStack *init_StringStack();
+struct StringStack *push_string(struct StringStack *, char *);
+struct StringStack *pop_string(struct StringStack *);
+char *top_string(struct StringStack *);
+int StringStackGetSize(struct StringStack *);
 //-------------------------------------------------------------------------------
 
 //-----------------------------------------Code Generation Function-------------------------------------------------------
