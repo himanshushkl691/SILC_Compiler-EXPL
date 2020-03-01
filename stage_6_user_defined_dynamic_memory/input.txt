@@ -5,42 +5,73 @@ List
 	str b;
 	List next;
 }
-BST
-{
-	int node;
-	BST left;
-	BST right;
-	List l;
-}
 endtype
 
 decl
-	List list1,list2;
-	BST myset;
-	str f1();
+	List insert(List l,int a,str b);
+	int printList(List l);
 enddecl
 
-str f1()
+List insert(List l,int a,str b)
 {
 	decl
+		List curr,new,prev;
 	enddecl
 	begin
-		return "hello";
+		new = alloc();
+		new.a = a;
+		new.b = b;
+		new.next = null;
+		curr = l;
+		prev = null;
+		while(curr != 0) do
+			prev = curr;
+			curr = curr.next;
+		endwhile;
+		if(prev == 0) then
+			l = new;
+		else
+			prev.next = new;
+		endif;
+		return l;
+	end
+}
+
+int printList(List l)
+{
+	decl
+		List curr;
+	enddecl
+	begin
+		curr = l;
+		while(curr != 0) do
+			write("*");
+			write(curr.a);
+			write(curr.b);
+			curr = curr.next;
+		endwhile;
+		return 0;
 	end
 }
 
 int main()
 {
 	decl
-		int a,b,c,d,e,f,g;
-		int h,i;
+		int ret,i,a;
+		str b;
 		List lst;
 	enddecl
 	begin
-		lst = alloc();
-		lst.a = 1;
-		lst.b = "hell";
-		i = free(lst);
+		initialize();
+		lst = null;
+		read(i);
+		while(i != 0) do
+			read(a);
+			read(b);
+			lst = insert(lst,a,b);
+			i = i - 1;
+		endwhile;
+		ret = printList(lst);
 		return 0;
 	end
 }

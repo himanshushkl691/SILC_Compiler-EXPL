@@ -822,7 +822,7 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTabl
 			fprintf(ft, "MOV R%d, %s\n", id, root->s);
 		return id;
 	}
-	else if (root->nodetype == VARIABLE && (root->type == TypeTableLookUp(T, "int") || root->type == TypeTableLookUp(T, "str")))
+	else if (root->nodetype == VARIABLE)
 	{
 		reg_idx id = getReg();
 		reg_idx aRes = getAddress(ft, root->varname, g, l);
@@ -840,6 +840,24 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTabl
 	}
 	else if (root->nodetype == FUNCTION)
 		return functionCall_code_generator(ft, root, g, l);
+	else if (root->nodetype == FIELD)
+	{
+		reg_idx id = getReg();
+		reg_idx aRes = getAddressOfField(ft, root, g, l);
+		fprintf(ft, "MOV R%d, [R%d]\n", id, aRes);
+		aRes = freeReg();
+		return id;
+	}
+	else if (root->nodetype == NULL_)
+	{
+		reg_idx id = getReg();
+		fprintf(ft, "MOV R%d, 0\n", id);
+		return id;
+	}
+	else if (root->nodetype == ALLOC)
+		return alloc_code_generator(ft);
+	else if (root->nodetype == FREE)
+		return free_code_generator(ft, root, g, l);
 	else
 	{
 		reg_idx a = expression_code_generator(ft, root->left, g, l);
@@ -890,6 +908,12 @@ int assignment_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g
 		else if (root->left->nodetype == ARRAY_VARIABLE)
 		{
 			reg_idx aRes = getArrayNodeAddress(ft, root->left, g, l);
+			fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
+			aRes = freeReg();
+		}
+		else if (root->left->nodetype == FIELD)
+		{
+			reg_idx aRes = getAddressOfField(ft, root->left, g, l);
 			fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
 			aRes = freeReg();
 		}
@@ -1230,6 +1254,11 @@ void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel
 			return_code_generator(ft, root, g, l);
 			return;
 		}
+		else if (root->nodetype == INITIALIZE)
+		{
+			initialize_code_generator(ft);
+			return;
+		}
 		code_generator_util(ft, root->left, blabel, clabel, g, l);
 		code_generator_util(ft, root->right, blabel, clabel, g, l);
 	}
@@ -1288,6 +1317,62 @@ reg_idx getArrayNodeAddress(FILE *ft, struct AST_Node *root, struct GSTable *g, 
 	fprintf(ft, "ADD R%d, R%d\n", temp0, temp1);
 	temp1 = freeReg();
 	return temp0;
+}
+
+reg_idx alloc_code_generator(FILE *ft)
+{
+	reg_idx z = getReg(), temp = getReg();
+	fprintf(ft, "MOV R%d, \"Alloc\"\nPUSH R%d\nMOV R%d, 8\nPUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\nCALL 0\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", z, z, z, z, z, z, z, z, temp, temp, temp, temp);
+	temp = freeReg();
+	return z;
+}
+
+reg_idx free_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
+{
+	reg_idx z = -1, id = -1;
+	if (root->left->nodetype == VARIABLE)
+		id = getAddress(ft, root->left->varname, g, l);
+	else if (root->left->nodetype == FIELD)
+		id = getAddressOfField(ft, root->left, g, l);
+	z = getReg();
+	fprintf(ft, "MOV R%d, R%d\n", z, id);
+	fprintf(ft, "MOV R%d, [R%d]\n", id, id);
+	reg_idx temp = getReg();
+	fprintf(ft, "PUSH R%d\nMOV R%d, \"Free\"\nPUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\nCALL 0\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", z, temp, temp, id, temp, temp, temp, id, temp, temp, temp, temp, z);
+	fprintf(ft, "MOV [R%d], -1\n", z);
+	temp = freeReg();
+	z = freeReg();
+	return id;
+}
+
+void initialize_code_generator(FILE *ft)
+{
+	reg_idx id = getReg();
+	fprintf(ft, "MOV R%d, \"Heapset\"\n", id);
+	fprintf(ft, "PUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", id, id, id, id, id);
+	fprintf(ft, "CALL 0\n");
+	fprintf(ft, "POP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", id, id, id, id, id);
+	id = freeReg();
+	return;
+}
+
+reg_idx getAddressOfField(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l)
+{
+	if (root)
+	{
+		reg_idx a = getAddressOfField(ft, root->left, g, l);
+		if (root->nodetype == VARIABLE)
+			a = getAddress(ft, root->varname, g, l);
+		else if (root->nodetype == FIELD)
+		{
+			int fieldindex = FieldListLookUp(root->left->type, root->right->varname)->fieldIndex;
+			fprintf(ft, "MOV R%d, [R%d]\n", a, a);
+			fprintf(ft, "ADD R%d, %d\n", a, fieldindex);
+		}
+		return a;
+	}
+	else
+		return -1;
 }
 
 void PushArgument(FILE *ft, struct AST_Node *root, struct GSTable *gst, struct LSTable *lst)

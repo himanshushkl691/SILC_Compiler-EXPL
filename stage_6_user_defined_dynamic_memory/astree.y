@@ -26,7 +26,7 @@
 };
 
 /**/
-%type <node> _BREAK _CONTINUE _BREAKPOINT   _ALLOC  _FREE
+%type <node> _BREAK _CONTINUE _BREAKPOINT   _INITIALIZE _ALLOC  _FREE
 %type <node> GDeclBlock GDeclList GDecl GIdList GId
 %type <node> LDecl LDeclBlock LDeclList IdList Type
 %type <node> TypeDefBlock   TypeDefList TypeDef FieldDeclList   FieldDecl   Field
@@ -58,7 +58,7 @@
 //repeat-until
 %token _REPEAT _UNTIL
 //break, continue, breakpoint
-%token _BREAK _CONTINUE _BREAKPOINT _MAIN   _RETURN _NULL   _FREE   _ALLOC
+%token _BREAK _CONTINUE _BREAKPOINT _MAIN   _RETURN _NULL   _FREE   _ALLOC  _INITIALIZE
 /*ASSOCIATIVITY*/
 %left _LT _LE
 %left _GT _GE
@@ -339,6 +339,7 @@ stmt:	Inputstmt                           {$$ = $1;}
 |   _BREAK ';'                              {$$ = $1;}
 |   _CONTINUE ';'                           {$$ = $1;}
 |   _BREAKPOINT ';'                         {$$ = $1;}
+|   _INITIALIZE    '(' ')'  ';'             {$$ = $1;}
 ;
 Inputstmt:  _READ '(' id ')' ';'            {
                                                 if($3->nodetype == FUNCTION)
@@ -355,13 +356,7 @@ Inputstmt:  _READ '(' id ')' ';'            {
                                                 }
                                             }
 ;
-Outputstmt: _WRITE '(' stringExp ')' ';'    {
-                                                if($3->type != TypeTableLookUp(T,"int") && $3->type != TypeTableLookUp(T,"str"))
-                                                {
-                                                    printf("*line %d: invalid argument type to write\n",line);
-                                                    exit(0);
-                                                }
-                                                $$ = makeTreeNode(WRITE,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,NULL,NULL,"Write");}
+Outputstmt: _WRITE '(' stringExp ')' ';'    {$$ = makeTreeNode(WRITE,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,NULL,NULL,"Write");}
 ;
 Assgstmt:   id '='  _ALLOC  '(' ')' ';'     {
                                                 if($1->type != TypeTableLookUp(T,"int") && $1->type != TypeTableLookUp(T,"str") && $1->nodetype != FUNCTION)
@@ -385,7 +380,7 @@ Assgstmt:   id '='  _ALLOC  '(' ')' ';'     {
                                                 }
                                             }
 |   id  '=' stringExp ';'                   {
-                                                if(((typeCheckExp($1) && typeCheckExp($3)) || (typeCheckStr($1) && typeCheckStr($3))) && ($1->nodetype != FUNCTION))
+                                                if($1->type == $3->type && ($1->nodetype != FUNCTION))
                                                     $$ = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,$1,$3,NULL,"=");
                                                 else{
                                                     printf("line %d :Invalid assignment to \"%s\"\n",line,$1->varname);
@@ -524,7 +519,7 @@ expr:   expr _PLUS  expr    {
     }
 }
 |   expr _NE expr   {
-    if(typeCheckExp($1) && typeCheckExp($3))
+    if((typeCheckExp($1) || (!typeCheckExp($1) && !typeCheckBool($1))) && (typeCheckExp($3) || (!typeCheckExp($3) && !typeCheckBool($3))))
         $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,$1,$3,NULL,"!=");
     else{
         printf("line %d :Invalid Operator\n",line);
@@ -532,7 +527,7 @@ expr:   expr _PLUS  expr    {
     }
 }
 |   expr _EQ expr   {
-    if(typeCheckExp($1) && typeCheckExp($3))
+    if((typeCheckExp($1) || (!typeCheckExp($1) && !typeCheckBool($1))) && (typeCheckExp($3) || (!typeCheckExp($3) && !typeCheckBool($3))))
         $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,$1,$3,NULL,"==");
     else{
         printf("line %d :Invalid Operator\n",line);

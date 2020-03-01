@@ -85,7 +85,8 @@ extern int yydebug;
     _RETURN = 295,
     _NULL = 296,
     _FREE = 297,
-    _ALLOC = 298
+    _ALLOC = 298,
+    _INITIALIZE = 299
   };
 #endif
 /* Tokens.  */
@@ -130,6 +131,7 @@ extern int yydebug;
 #define _NULL 296
 #define _FREE 297
 #define _ALLOC 298
+#define _INITIALIZE 299
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -140,7 +142,7 @@ union YYSTYPE
 
     struct AST_Node *node;
 
-#line 144 "y.tab.h" /* yacc.c:1909  */
+#line 146 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

@@ -50,6 +50,7 @@
 #define FIELD 40
 #define ALLOC 41
 #define FREE 42
+#define INITIALIZE 43
 
 int ADDR;
 int LABEL;
@@ -317,6 +318,10 @@ void generateHeader(FILE *);
 reg_idx getArrayNodeAddress(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
 reg_idx getAddress(FILE *, char *, struct GSTable *, struct LSTable *);
 void PushArgument(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+reg_idx alloc_code_generator(FILE *);
+reg_idx free_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+void initialize_code_generator(FILE *);
+reg_idx getAddressOfField(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------------Evaluator Function-------------------------------------------------------
