@@ -48,6 +48,8 @@
 #define RETURN 38
 #define NULL_ 39
 #define FIELD 40
+#define ALLOC 41
+#define FREE 42
 
 int ADDR;
 int LABEL;

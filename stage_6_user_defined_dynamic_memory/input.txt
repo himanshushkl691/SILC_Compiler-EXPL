@@ -37,10 +37,10 @@ int main()
 		List lst;
 	enddecl
 	begin
-		write(f1());
-		lst = null;
+		lst = alloc();
 		lst.a = 1;
 		lst.b = "hell";
+		i = free(lst);
 		return 0;
 	end
 }

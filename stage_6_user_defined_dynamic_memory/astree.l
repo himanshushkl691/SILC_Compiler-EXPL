@@ -29,6 +29,8 @@ decl        {return _DECL;}
 enddecl     {return _ENDDECL;}
 type        {return _TYPE;}
 endtype     {return _ENDTYPE;}
+alloc       {yylval.node = makeTreeNode(ALLOC,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,"alloc");return _ALLOC;}
+free        {yylval.node = makeTreeNode(FREE,TypeTableLookUp(T,"int"),NULL,-1,-1,NULL,NULL,NULL,"free");return _FREE;}
 NULL        {yylval.node = makeTreeNode(NULL_,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,"void");return _NULL;}
 null        {yylval.node = makeTreeNode(NULL_,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,"void");return _NULL;}
 int         {yylval.node = makeTreeNode(INTEGER,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,"integer");return _INT;}

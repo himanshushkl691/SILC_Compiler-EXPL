@@ -26,7 +26,7 @@
 };
 
 /**/
-%type <node> _BREAK _CONTINUE _BREAKPOINT
+%type <node> _BREAK _CONTINUE _BREAKPOINT   _ALLOC  _FREE
 %type <node> GDeclBlock GDeclList GDecl GIdList GId
 %type <node> LDecl LDeclBlock LDeclList IdList Type
 %type <node> TypeDefBlock   TypeDefList TypeDef FieldDeclList   FieldDecl   Field
@@ -58,7 +58,7 @@
 //repeat-until
 %token _REPEAT _UNTIL
 //break, continue, breakpoint
-%token _BREAK _CONTINUE _BREAKPOINT _MAIN   _RETURN _NULL
+%token _BREAK _CONTINUE _BREAKPOINT _MAIN   _RETURN _NULL   _FREE   _ALLOC
 /*ASSOCIATIVITY*/
 %left _LT _LE
 %left _GT _GE
@@ -111,57 +111,57 @@ Program :   TypeDefBlock GDeclBlock   FnDefBlock   MainBlock
                                     {
                                         $$ = NULL;
                                         printf("Parsing Completed\n");
-                                        // generateHeader(ft);
-                                        // int i = 0;
-                                        // while(StackGetSize(stack)){
-                                        //         tstack = top(stack);
-                                        //         stack = pop(stack);
-                                        //     if(i == 0){
-                                        //         gst_node_temp = GSTLookUp(gst,"main");
-                                        //         fprintf(ft,"CALL _F%d\n",gst_node_temp->binding_addr);
-                                        //         generateExit(ft);
-                                        //         i = 1;
-                                        //     }
-                                        //     code_generator(ft,tstack->ast,gst,tstack->lst);
-                                        // }
+                                        generateHeader(ft);
+                                        int i = 0;
+                                        while(StackGetSize(stack)){
+                                                tstack = top(stack);
+                                                stack = pop(stack);
+                                            if(i == 0){
+                                                gst_node_temp = GSTLookUp(gst,"main");
+                                                fprintf(ft,"CALL _F%d\n",gst_node_temp->binding_addr);
+                                                generateExit(ft);
+                                                i = 1;
+                                            }
+                                            code_generator(ft,tstack->ast,gst,tstack->lst);
+                                        }
                                         exit(1);
 							        }
 |   TypeDefBlock GDeclBlock  MainBlock   		
                                     {
                                         $$ = NULL;
                                         printf("Parsing Completed\n");
-                                        // generateHeader(ft);
-                                        // int i = 0;
-                                        // while(StackGetSize(stack)){
-                                        //     tstack = top(stack);
-                                        //     stack = pop(stack);
-                                        //     if(i == 0){
-                                        //         gst_node_temp = GSTLookUp(gst,"main");
-                                        //         fprintf(ft,"CALL _F%d\n",gst_node_temp->binding_addr);
-                                        //         generateExit(ft);
-                                        //         i = 1;
-                                        //     }
-                                        //     code_generator(ft,tstack->ast,gst,tstack->lst);
-                                        // }
+                                        generateHeader(ft);
+                                        int i = 0;
+                                        while(StackGetSize(stack)){
+                                            tstack = top(stack);
+                                            stack = pop(stack);
+                                            if(i == 0){
+                                                gst_node_temp = GSTLookUp(gst,"main");
+                                                fprintf(ft,"CALL _F%d\n",gst_node_temp->binding_addr);
+                                                generateExit(ft);
+                                                i = 1;
+                                            }
+                                            code_generator(ft,tstack->ast,gst,tstack->lst);
+                                        }
                                         exit(1);
 							        }
 |   TypeDefBlock MainBlock						
                                     {
                                         $$ = NULL;
                                         printf("Parsing Completed\n");
-                                        // generateHeader(ft);
-                                        // int i = 0;
-                                        // while(StackGetSize(stack)){
-                                        //     tstack = top(stack);
-                                        //     stack = pop(stack);
-                                        //     if(i == 0){
-                                        //         gst_node_temp = GSTLookUp(gst,"main");
-                                        //         fprintf(ft,"CALL _F%d\n",gst_node_temp->binding_addr);
-                                        //         generateExit(ft);
-                                        //                 i = 1;
-                                        //         }
-                                        //     code_generator(ft,tstack->ast,gst,tstack->lst);
-                                        // }
+                                        generateHeader(ft);
+                                        int i = 0;
+                                        while(StackGetSize(stack)){
+                                            tstack = top(stack);
+                                            stack = pop(stack);
+                                            if(i == 0){
+                                                gst_node_temp = GSTLookUp(gst,"main");
+                                                fprintf(ft,"CALL _F%d\n",gst_node_temp->binding_addr);
+                                                generateExit(ft);
+                                                        i = 1;
+                                                }
+                                            code_generator(ft,tstack->ast,gst,tstack->lst);
+                                        }
                                         exit(1);
 							        }
 ;
@@ -363,7 +363,28 @@ Outputstmt: _WRITE '(' stringExp ')' ';'    {
                                                 }
                                                 $$ = makeTreeNode(WRITE,TypeTableLookUp(T,"void"),NULL,-1,-1,$3,NULL,NULL,"Write");}
 ;
-Assgstmt:   id '=' stringExp ';'            {
+Assgstmt:   id '='  _ALLOC  '(' ')' ';'     {
+                                                if($1->type != TypeTableLookUp(T,"int") && $1->type != TypeTableLookUp(T,"str") && $1->nodetype != FUNCTION)
+                                                    $$ = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,$1,$3,NULL,"=");
+                                                else
+                                                {
+                                                    printf("*line %d: alloc() must be called for user-defined data types\n",line);
+                                                    exit(0);
+                                                }
+                                            }
+|   id  '=' _FREE   '(' id  ')' ';'         {
+                                                if($1->type == TypeTableLookUp(T,"int") && $1->nodetype != FUNCTION && $5->type != TypeTableLookUp(T,"int") && $5->type != TypeTableLookUp(T,"str") && $5->nodetype != ARRAY_VARIABLE && $5->nodetype != FUNCTION)
+                                                {
+                                                    $3->left = $5;
+                                                    $$ = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,$1,$3,NULL,"=");
+                                                }
+                                                else
+                                                {
+                                                    printf("*line %d: Semantic Error for Free()\n",line);
+                                                    exit(0);
+                                                }
+                                            }
+|   id  '=' stringExp ';'                   {
                                                 if(((typeCheckExp($1) && typeCheckExp($3)) || (typeCheckStr($1) && typeCheckStr($3))) && ($1->nodetype != FUNCTION))
                                                     $$ = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,$1,$3,NULL,"=");
                                                 else{

@@ -83,7 +83,9 @@ extern int yydebug;
     _BREAKPOINT = 293,
     _MAIN = 294,
     _RETURN = 295,
-    _NULL = 296
+    _NULL = 296,
+    _FREE = 297,
+    _ALLOC = 298
   };
 #endif
 /* Tokens.  */
@@ -126,6 +128,8 @@ extern int yydebug;
 #define _MAIN 294
 #define _RETURN 295
 #define _NULL 296
+#define _FREE 297
+#define _ALLOC 298
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -136,7 +140,7 @@ union YYSTYPE
 
     struct AST_Node *node;
 
-#line 140 "y.tab.h" /* yacc.c:1909  */
+#line 144 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
