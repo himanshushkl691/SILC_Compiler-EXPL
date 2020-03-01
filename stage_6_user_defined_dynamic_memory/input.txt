@@ -1,8 +1,8 @@
 type
 List
 {
-	int size;
-	str size1;
+	int a;
+	str b;
 	List next;
 }
 BST
@@ -34,9 +34,13 @@ int main()
 	decl
 		int a,b,c,d,e,f,g;
 		int h,i;
+		List lst;
 	enddecl
 	begin
 		write(f1());
+		lst = null;
+		lst.a = 1;
+		lst.b = "hell";
 		return 0;
 	end
 }

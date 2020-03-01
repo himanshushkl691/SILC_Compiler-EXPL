@@ -43,6 +43,7 @@ breakpoint  {yylval.node = makeTreeNode(BREAKPOINT,TypeTableLookUp(T,"void"),NUL
     yylval.node = makeTreeNode(CONSTANT,TypeTableLookUp(T,"int"),NULL,-1,number,NULL,NULL,NULL,yytext);
     return _NUM;
 }
+"."         {return *yytext;}
 ";" 		{return *yytext;}
 "(" 		{return *yytext;}
 ","         {return *yytext;}
