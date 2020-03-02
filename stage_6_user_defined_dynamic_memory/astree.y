@@ -451,204 +451,204 @@ DoWhile:    _DO '{' Slist '}' _WHILE '(' expr ')' ';'   {
                                                         }
 ;
 //--------------------------Expressions-----------------------
-expr:   expr _PLUS  expr    {
-    if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,PLUS,-1,$1,$3,NULL,"+");
-    else{
-        printf("line %d :Invalid operand\n",line);
-        exit(1);
-    }
-}
-|   expr _MINUS expr     {
-    if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MINUS,-1,$1,$3,NULL,"-");
-    else{
-        printf("line %d :Invalid operand\n",line);
-        exit(1);
-    }
-}
-|   expr _MUL expr   {
-    if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MUL,-1,$1,$3,NULL,"*");
-    else{
-        printf("line %d :Invalid operand\n",line);
-        exit(1);
-    }
-}
-|   expr _DIV expr   {
-    if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,DIV,-1,$1,$3,NULL,"/");
-    else{
-        printf("line %d :Invalid operand\n",line);
-        exit(1);
-    }
-}
-|   expr _MOD expr {
-    if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MOD,-1,$1,$3,NULL,"%");
-    else{
-        printf("line %d :Invalid operand\n",line);
-        exit(1);
-    }
-}
-|   expr _LT expr   {
-    if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,LT,-1,$1,$3,NULL,"<");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-|   expr _LE expr   {
-    if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,LE,-1,$1,$3,NULL,"<=");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-|   expr _GT expr   {
-    if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,GT,-1,$1,$3,NULL,">");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-|   expr _GE expr   {
-    if(typeCheckExp($1) && typeCheckExp($3))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,GE,-1,$1,$3,NULL,">=");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-|   expr _NE expr   {
-    if((typeCheckExp($1) || (!typeCheckExp($1) && !typeCheckBool($1))) && ($3->nodetype == NULL_ || typeCheckExp($3) || (!typeCheckExp($3) && !typeCheckBool($3))))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,$1,$3,NULL,"!=");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-|   expr _EQ expr   {
-    if((typeCheckExp($1) || (!typeCheckExp($1) && !typeCheckBool($1))) && ($3->nodetype == NULL_ || typeCheckExp($3) || (!typeCheckExp($3) && !typeCheckBool($3))))
-        $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,$1,$3,NULL,"==");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-|   expr    _EQ _NULL               {
-                                        if(!typeCheckExp($1) && !typeCheckBool($1))
-                                            $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,$1,$3,NULL,"==");
-                                        else
-                                        {
-                                            printf("line %d :Invalid Operator\n",line);
-                                            exit(1);
-                                        }
-                                    }
-|   expr    _NE _NULL               {
-                                        if(!typeCheckExp($1) && !typeCheckBool($1))
-                                            $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,$1,$3,NULL,"!=");
-                                        else
-                                        {
-                                            printf("line %d :Invalid Operator\n",line);
-                                            exit(1);
-                                        }
-                                    }
-|   '(' expr ')'                    {$$ = $2;}
-|   _NUM                            {$$ = $1;}
-|   id                              {$$ = $1;}
+expr:   expr _PLUS  expr                                {
+                                                            if(typeCheckExp($1) && typeCheckExp($3))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,PLUS,-1,$1,$3,NULL,"+");
+                                                            else{
+                                                                printf("line %d :Invalid operand\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr _MINUS expr                                    {
+                                                            if(typeCheckExp($1) && typeCheckExp($3))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MINUS,-1,$1,$3,NULL,"-");
+                                                            else{
+                                                                printf("line %d :Invalid operand\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr _MUL expr                                      {
+                                                            if(typeCheckExp($1) && typeCheckExp($3))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MUL,-1,$1,$3,NULL,"*");
+                                                            else{
+                                                                printf("line %d :Invalid operand\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr _DIV expr                                      {
+                                                            if(typeCheckExp($1) && typeCheckExp($3))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,DIV,-1,$1,$3,NULL,"/");
+                                                            else{
+                                                                printf("line %d :Invalid operand\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr _MOD expr                                      {
+                                                            if(typeCheckExp($1) && typeCheckExp($3))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MOD,-1,$1,$3,NULL,"%");
+                                                            else{
+                                                                printf("line %d :Invalid operand\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr _LT expr                                       {
+                                                            if(typeCheckExp($1) && typeCheckExp($3))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,LT,-1,$1,$3,NULL,"<");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr _LE expr                                       {
+                                                            if(typeCheckExp($1) && typeCheckExp($3))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,LE,-1,$1,$3,NULL,"<=");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr _GT expr                                       {
+                                                            if(typeCheckExp($1) && typeCheckExp($3))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,GT,-1,$1,$3,NULL,">");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr _GE expr                                       {
+                                                            if(typeCheckExp($1) && typeCheckExp($3))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,GE,-1,$1,$3,NULL,">=");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr _NE expr                                       {
+                                                            if((typeCheckExp($1) || (!typeCheckExp($1) && !typeCheckBool($1))) && ($3->nodetype == NULL_ || typeCheckExp($3) || (!typeCheckExp($3) && !typeCheckBool($3))))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,$1,$3,NULL,"!=");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr _EQ expr                                       {
+                                                            if((typeCheckExp($1) || (!typeCheckExp($1) && !typeCheckBool($1))) && ($3->nodetype == NULL_ || typeCheckExp($3) || (!typeCheckExp($3) && !typeCheckBool($3))))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,$1,$3,NULL,"==");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr    _EQ _NULL                                   {
+                                                            if(!typeCheckExp($1) && !typeCheckBool($1))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,$1,$3,NULL,"==");
+                                                            else
+                                                            {
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   expr    _NE _NULL                                   {
+                                                            if(!typeCheckExp($1) && !typeCheckBool($1))
+                                                                $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,$1,$3,NULL,"!=");
+                                                            else
+                                                            {
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+|   '(' expr ')'                                        {$$ = $2;}
+|   _NUM                                                {$$ = $1;}
+|   id                                                  {$$ = $1;}
 ;
 //----------------------------Identifiers-----------------------
-id: _ID {
-    $$ = $1;
-    lst_node_temp = LSTLookUp(lst,$1->varname);
-    if(lst_node_temp)
-        $$->type = lst_node_temp->type;
-    else{
-        gst_node_temp = GSTLookUp(gst,$1->varname);
-        if(!gst_node_temp){
-            printf("line %d :Variable \"%s\" not declared\n",line,$$->varname);
-            exit(1);
-        }
-        else
-            $$->type = gst_node_temp->type;
-    }
-}
-|   _ID '[' expr ']' {
-    if($3->type != TypeTableLookUp(T,"int")){
-        printf("line %d :Invalid index\n",line);
-        exit(1);
-    }
-    lst_node_temp = LSTLookUp(lst,$1->varname);
-    if(lst_node_temp){
-        if(lst_node_temp->type_of_var != ARRAY_VARIABLE){
-            printf("line %d :Variable \"%s\" not of array type\n",line,$1->varname);
-            exit(1);
-        }
-        $1->type = lst_node_temp->type;
-        $$ = makeTreeNode(ARRAY_VARIABLE,$1->type,$1->varname,-1,-1,$1,$3,NULL,"ARRAY_VARIABLE");
-    }
-    else{
-        gst_node_temp = GSTLookUp(gst,$1->varname);
-        if(!gst_node_temp)
-        {
-            printf("line %d :Variable \"%s\" not declared\n",line,$1->varname);
-            exit(1);            
-        }
-        else{
-            if(gst_node_temp->type_of_var != ARRAY_VARIABLE){
-                printf("line %d :Variable \"%s\" not of array type\n",line,$1->varname);
-                exit(1);
-            }
-            $1->type = gst_node_temp->type;
-            $$ = makeTreeNode(ARRAY_VARIABLE,$1->type,$1->varname,-1,-1,$1,$3,gst_node_temp,"ARRAY_VARIABLE");
-        }
-    }
-}
-|   _ID '(' ArgList ')' {
-    gst_node_temp = GSTLookUp(gst,$1->varname);
-    if(!gst_node_temp){
-        printf("line %d :Function \"%s\" not declared\n",line,$1->varname);
-        exit(1);
-    }
-    if(gst_node_temp->type_of_var != FUNCTION){
-        printf("line %d :\"%s\" not a function\n",line,$1->varname);
-        exit(1);
-    }
-    if(!checkASTParam(gst_node_temp->param,$3)){
-        printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,$1->varname);
-        exit(1);
-    }
-    $1->nodetype = FUNCTION;
-    $1->type = gst_node_temp->type;
-    $1->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-    $1->param = $3;
-    $3 = NULL;
-    $$ = $1;
-}
-|   _ID '(' ')' {
-    gst_node_temp = GSTLookUp(gst,$1->varname);
-    if(!gst_node_temp){
-        printf("line %d :Function \"%s\" not declared\n",line,$1->varname);
-        exit(1);
-    }
-    if(gst_node_temp->type_of_var != FUNCTION){
-        printf("line %d :\"%s\" not a function\n",line,$1->varname);
-        exit(1);
-    }
-    if(gst_node_temp->param->size != 0){
-        printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,$1->varname);
-        exit(1);
-    }
-    $1->nodetype = FUNCTION;
-    $1->type = gst_node_temp->type;
-    $1->param = NULL;
-    $$ = $1;
-}
-|   Field                           {$$ = $1;}
+id: _ID                                                 {
+                                                            $$ = $1;
+                                                            lst_node_temp = LSTLookUp(lst,$1->varname);
+                                                            if(lst_node_temp)
+                                                                $$->type = lst_node_temp->type;
+                                                            else{
+                                                                gst_node_temp = GSTLookUp(gst,$1->varname);
+                                                                if(!gst_node_temp){
+                                                                    printf("line %d :Variable \"%s\" not declared\n",line,$$->varname);
+                                                                    exit(1);
+                                                                }
+                                                                else
+                                                                    $$->type = gst_node_temp->type;
+                                                            }
+                                                        }
+|   _ID '[' expr ']'                                    {
+                                                            if($3->type != TypeTableLookUp(T,"int")){
+                                                                printf("line %d :Invalid index\n",line);
+                                                                exit(1);
+                                                            }
+                                                            lst_node_temp = LSTLookUp(lst,$1->varname);
+                                                            if(lst_node_temp){
+                                                                if(lst_node_temp->type_of_var != ARRAY_VARIABLE){
+                                                                    printf("line %d :Variable \"%s\" not of array type\n",line,$1->varname);
+                                                                    exit(1);
+                                                                }
+                                                                $1->type = lst_node_temp->type;
+                                                                $$ = makeTreeNode(ARRAY_VARIABLE,$1->type,$1->varname,-1,-1,$1,$3,NULL,"ARRAY_VARIABLE");
+                                                            }
+                                                            else{
+                                                                gst_node_temp = GSTLookUp(gst,$1->varname);
+                                                                if(!gst_node_temp)
+                                                                {
+                                                                    printf("line %d :Variable \"%s\" not declared\n",line,$1->varname);
+                                                                    exit(1);            
+                                                                }
+                                                                else{
+                                                                    if(gst_node_temp->type_of_var != ARRAY_VARIABLE){
+                                                                        printf("line %d :Variable \"%s\" not of array type\n",line,$1->varname);
+                                                                        exit(1);
+                                                                    }
+                                                                    $1->type = gst_node_temp->type;
+                                                                    $$ = makeTreeNode(ARRAY_VARIABLE,$1->type,$1->varname,-1,-1,$1,$3,gst_node_temp,"ARRAY_VARIABLE");
+                                                                }
+                                                            }
+                                                        }
+|   _ID '(' ArgList ')'                                 {
+                                                            gst_node_temp = GSTLookUp(gst,$1->varname);
+                                                            if(!gst_node_temp){
+                                                                printf("line %d :Function \"%s\" not declared\n",line,$1->varname);
+                                                                exit(1);
+                                                            }
+                                                            if(gst_node_temp->type_of_var != FUNCTION){
+                                                                printf("line %d :\"%s\" not a function\n",line,$1->varname);
+                                                                exit(1);
+                                                            }
+                                                            if(!checkASTParam(gst_node_temp->param,$3)){
+                                                                printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,$1->varname);
+                                                                exit(1);
+                                                            }
+                                                            $1->nodetype = FUNCTION;
+                                                            $1->type = gst_node_temp->type;
+                                                            $1->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+                                                            $1->param = $3;
+                                                            $3 = NULL;
+                                                            $$ = $1;
+                                                        }
+|   _ID '(' ')'                                         {
+                                                            gst_node_temp = GSTLookUp(gst,$1->varname);
+                                                            if(!gst_node_temp){
+                                                                printf("line %d :Function \"%s\" not declared\n",line,$1->varname);
+                                                                exit(1);
+                                                            }
+                                                            if(gst_node_temp->type_of_var != FUNCTION){
+                                                                printf("line %d :\"%s\" not a function\n",line,$1->varname);
+                                                                exit(1);
+                                                            }
+                                                            if(gst_node_temp->param->size != 0){
+                                                                printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,$1->varname);
+                                                                exit(1);
+                                                            }
+                                                            $1->nodetype = FUNCTION;
+                                                            $1->type = gst_node_temp->type;
+                                                            $1->param = NULL;
+                                                            $$ = $1;
+                                                        }
+|   Field                                               {$$ = $1;}
 ;
 
 //----------------------------Field-------------------------
