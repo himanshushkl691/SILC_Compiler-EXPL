@@ -1,34 +1,43 @@
 type
+User
+{
+	int roll;
+	str name;
+}
 List
 {
 	int a;
-	str b;
+	User b;
 	List next;
 }
 endtype
 
 decl
-	List insert(List l,int a,str b);
+	List insert(List l,int a,int roll,str name);
 	int printList(List l);
 enddecl
 
-List insert(List l,int a,str b)
+List insert(List l,int a,int roll,str name)
 {
 	decl
 		List curr,new,prev;
+		User user;
 	enddecl
 	begin
+		user = alloc();
+		user.roll = roll;
+		user.name = name;
 		new = alloc();
 		new.a = a;
-		new.b = b;
+		new.b = user;
 		new.next = null;
 		curr = l;
 		prev = null;
-		while(curr != 0) do
+		while(curr != null) do
 			prev = curr;
 			curr = curr.next;
 		endwhile;
-		if(prev == 0) then
+		if(prev == null) then
 			l = new;
 		else
 			prev.next = new;
@@ -44,10 +53,11 @@ int printList(List l)
 	enddecl
 	begin
 		curr = l;
-		while(curr != 0) do
+		while(curr != null) do
 			write("*");
 			write(curr.a);
-			write(curr.b);
+			write(curr.b.roll);
+			write(curr.b.name);
 			curr = curr.next;
 		endwhile;
 		return 0;
@@ -65,12 +75,25 @@ int main()
 		initialize();
 		lst = null;
 		read(i);
-		while(i != 0) do
+		ret = 0;
+		while(ret != i) do
 			read(a);
 			read(b);
-			lst = insert(lst,a,b);
-			i = i - 1;
+			lst = insert(lst,ret + 1,a,b);
+			ret = ret + 1;
 		endwhile;
+		write("First");
+		ret = printList(lst);
+		ret = free(lst);
+		read(i);
+		ret = 0;
+		while(ret != i) do
+			read(a);
+			read(b);
+			lst = insert(lst,ret + 1,a,b);
+			ret = ret + 1;
+		endwhile;
+		write("Second");
 		ret = printList(lst);
 		return 0;
 	end

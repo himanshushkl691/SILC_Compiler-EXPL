@@ -851,7 +851,7 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTabl
 	else if (root->nodetype == NULL_)
 	{
 		reg_idx id = getReg();
-		fprintf(ft, "MOV R%d, 0\n", id);
+		fprintf(ft, "MOV R%d, -1\n", id);
 		return id;
 	}
 	else if (root->nodetype == ALLOC)

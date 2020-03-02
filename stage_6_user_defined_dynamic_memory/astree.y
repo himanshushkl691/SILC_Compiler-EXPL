@@ -174,6 +174,11 @@ TypeDefList:    TypeDefList TypeDef         {}
 |   TypeDef                                 {}
 ;
 TypeDef:    _ID '{' FieldDeclList   '}'     {
+                                                if(F->entry > 8)
+                                                {
+                                                    printf("*line %d: User-Defined data type cannot have more than 8 field\n",line);
+                                                    exit(1);
+                                                }
                                                 T = installTypeTableNode(T,$1->varname,8,F);
                                                 ValidateFieldList(TypeTableLookUp(T,$1->varname));
                                                 F = initFieldList();
@@ -519,7 +524,7 @@ expr:   expr _PLUS  expr    {
     }
 }
 |   expr _NE expr   {
-    if((typeCheckExp($1) || (!typeCheckExp($1) && !typeCheckBool($1))) && (typeCheckExp($3) || (!typeCheckExp($3) && !typeCheckBool($3))))
+    if((typeCheckExp($1) || (!typeCheckExp($1) && !typeCheckBool($1))) && ($3->nodetype == NULL_ || typeCheckExp($3) || (!typeCheckExp($3) && !typeCheckBool($3))))
         $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,$1,$3,NULL,"!=");
     else{
         printf("line %d :Invalid Operator\n",line);
@@ -527,13 +532,31 @@ expr:   expr _PLUS  expr    {
     }
 }
 |   expr _EQ expr   {
-    if((typeCheckExp($1) || (!typeCheckExp($1) && !typeCheckBool($1))) && (typeCheckExp($3) || (!typeCheckExp($3) && !typeCheckBool($3))))
+    if((typeCheckExp($1) || (!typeCheckExp($1) && !typeCheckBool($1))) && ($3->nodetype == NULL_ || typeCheckExp($3) || (!typeCheckExp($3) && !typeCheckBool($3))))
         $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,$1,$3,NULL,"==");
     else{
         printf("line %d :Invalid Operator\n",line);
         exit(1);
     }
 }
+|   expr    _EQ _NULL               {
+                                        if(!typeCheckExp($1) && !typeCheckBool($1))
+                                            $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,$1,$3,NULL,"==");
+                                        else
+                                        {
+                                            printf("line %d :Invalid Operator\n",line);
+                                            exit(1);
+                                        }
+                                    }
+|   expr    _NE _NULL               {
+                                        if(!typeCheckExp($1) && !typeCheckBool($1))
+                                            $$ = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,$1,$3,NULL,"!=");
+                                        else
+                                        {
+                                            printf("line %d :Invalid Operator\n",line);
+                                            exit(1);
+                                        }
+                                    }
 |   '(' expr ')'                    {$$ = $2;}
 |   _NUM                            {$$ = $1;}
 |   id                              {$$ = $1;}
