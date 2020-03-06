@@ -6,6 +6,11 @@ type
   bst left;
   bst right;
   }
+  bts{
+  int a;
+  bst left;
+  bst right;
+  }
 endtype
 
 decl
@@ -91,9 +96,11 @@ int main()
   decl
   int val,flag;
   bst Root;
+  bts Tail;
   enddecl
 
   begin
+    Root.left.a = Tail.a;
     initialize();
     Root = null;
 

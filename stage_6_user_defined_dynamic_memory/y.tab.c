@@ -536,14 +536,14 @@ static const yytype_uint16 yyrline[] =
 {
        0,    75,    75,    98,   103,   110,   129,   148,   170,   171,
      173,   174,   176,   187,   188,   190,   194,   195,   197,   198,
-     200,   202,   203,   205,   209,   213,   218,   226,   227,   229,
-     260,   294,   295,   297,   304,   305,   307,   308,   310,   312,
-     313,   317,   321,   327,   328,   329,   333,   334,   337,   338,
-     339,   340,   341,   342,   343,   344,   345,   346,   347,   349,
-     364,   366,   375,   387,   395,   405,   406,   408,   417,   426,
-     435,   444,   454,   462,   470,   478,   486,   494,   502,   510,
-     518,   526,   534,   542,   551,   560,   561,   562,   565,   580,
-     611,   632,   651,   655,   666
+     200,   202,   203,   205,   209,   218,   223,   231,   232,   234,
+     265,   299,   300,   302,   309,   310,   312,   313,   315,   317,
+     318,   322,   326,   332,   333,   334,   338,   339,   342,   343,
+     344,   345,   346,   347,   348,   349,   350,   351,   352,   354,
+     369,   371,   380,   392,   400,   410,   411,   413,   422,   431,
+     440,   449,   459,   467,   475,   483,   491,   499,   507,   515,
+     523,   531,   539,   547,   556,   565,   566,   567,   570,   585,
+     616,   637,   656,   660,   671
 };
 #endif
 
@@ -1723,46 +1723,51 @@ yyreduce:
   case 24:
 #line 209 "astree.y" /* yacc.c:1646  */
     {
+                                                    if(strcmp(top_string(TYPE_STACK),"int") != 0 && strcmp(top_string(TYPE_STACK),"str") != 0)
+                                                    {
+                                                        printf("*line %d : Cannot declare array of user-data type\n",line);
+                                                        exit(1);
+                                                    }
 								                    gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),ARRAY_VARIABLE,(yyvsp[-3].node)->varname,(yyvsp[-1].node)->val,NULL,lst);
                                                     lst = LSTDelete(lst);
 							                    }
-#line 1730 "y.tab.c" /* yacc.c:1646  */
+#line 1735 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 25:
-#line 213 "astree.y" /* yacc.c:1646  */
+#line 218 "astree.y" /* yacc.c:1646  */
     {
                                                     gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),FUNCTION,(yyvsp[-3].node)->varname,1,Parserparam,lst);
                                                     lst = LSTDelete(lst);
                                                     Parserparam = ParamDelete(Parserparam);
 							                    }
-#line 1740 "y.tab.c" /* yacc.c:1646  */
+#line 1745 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 26:
-#line 218 "astree.y" /* yacc.c:1646  */
+#line 223 "astree.y" /* yacc.c:1646  */
     {
 								                    gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),FUNCTION,(yyvsp[-2].node)->varname,1,Parserparam,lst);
                                                     lst = LSTDelete(lst);
                                                     Parserparam = ParamDelete(Parserparam);
 							                    }
-#line 1750 "y.tab.c" /* yacc.c:1646  */
+#line 1755 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 226 "astree.y" /* yacc.c:1646  */
+#line 231 "astree.y" /* yacc.c:1646  */
     {}
-#line 1756 "y.tab.c" /* yacc.c:1646  */
+#line 1761 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 28:
-#line 227 "astree.y" /* yacc.c:1646  */
+#line 232 "astree.y" /* yacc.c:1646  */
     {}
-#line 1762 "y.tab.c" /* yacc.c:1646  */
+#line 1767 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 29:
-#line 230 "astree.y" /* yacc.c:1646  */
+#line 235 "astree.y" /* yacc.c:1646  */
     {
                                                 gst_node_temp = GSTLookUp(gst,(yyvsp[-7].node)->varname);
                                                 if(!gst_node_temp){
@@ -1793,11 +1798,11 @@ yyreduce:
                                                 stack = push(stack,(yyval.node),gst_node_temp->lst);
                                                 (yyval.node) = ASTDelete((yyval.node));
                                             }
-#line 1797 "y.tab.c" /* yacc.c:1646  */
+#line 1802 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 30:
-#line 261 "astree.y" /* yacc.c:1646  */
+#line 266 "astree.y" /* yacc.c:1646  */
     {
                                                 gst_node_temp = GSTLookUp(gst,(yyvsp[-6].node)->varname);
                                                 if(!gst_node_temp){
@@ -1828,187 +1833,187 @@ yyreduce:
                                                 stack = push(stack,(yyval.node),gst_node_temp->lst);
                                                 (yyval.node) = ASTDelete((yyval.node));
                                             }
-#line 1832 "y.tab.c" /* yacc.c:1646  */
+#line 1837 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 31:
-#line 294 "astree.y" /* yacc.c:1646  */
+#line 299 "astree.y" /* yacc.c:1646  */
     {}
-#line 1838 "y.tab.c" /* yacc.c:1646  */
+#line 1843 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 32:
-#line 295 "astree.y" /* yacc.c:1646  */
+#line 300 "astree.y" /* yacc.c:1646  */
     {}
-#line 1844 "y.tab.c" /* yacc.c:1646  */
+#line 1849 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 33:
-#line 297 "astree.y" /* yacc.c:1646  */
+#line 302 "astree.y" /* yacc.c:1646  */
     {
                                                     Parserparam = ParamInsert(Parserparam,(yyvsp[0].node)->varname,TypeTableLookUp(T,top_string(TYPE_STACK)),VARIABLE);
                                                     TYPE_STACK = pop_string(TYPE_STACK);
                                                 }
-#line 1853 "y.tab.c" /* yacc.c:1646  */
+#line 1858 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 34:
-#line 304 "astree.y" /* yacc.c:1646  */
+#line 309 "astree.y" /* yacc.c:1646  */
     {lst = ParamToLSTInstall(lst,Parserparam);}
-#line 1859 "y.tab.c" /* yacc.c:1646  */
+#line 1864 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 35:
-#line 305 "astree.y" /* yacc.c:1646  */
+#line 310 "astree.y" /* yacc.c:1646  */
     {lst = ParamToLSTInstall(lst,Parserparam);}
-#line 1865 "y.tab.c" /* yacc.c:1646  */
+#line 1870 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 36:
-#line 307 "astree.y" /* yacc.c:1646  */
+#line 312 "astree.y" /* yacc.c:1646  */
     {}
-#line 1871 "y.tab.c" /* yacc.c:1646  */
+#line 1876 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 37:
-#line 308 "astree.y" /* yacc.c:1646  */
+#line 313 "astree.y" /* yacc.c:1646  */
     {}
-#line 1877 "y.tab.c" /* yacc.c:1646  */
+#line 1882 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 38:
-#line 310 "astree.y" /* yacc.c:1646  */
+#line 315 "astree.y" /* yacc.c:1646  */
     {TYPE_STACK = pop_string(TYPE_STACK);}
-#line 1883 "y.tab.c" /* yacc.c:1646  */
+#line 1888 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 39:
-#line 312 "astree.y" /* yacc.c:1646  */
+#line 317 "astree.y" /* yacc.c:1646  */
     {lst = LSTInstall(lst,(yyvsp[0].node)->varname,TypeTableLookUp(T,top_string(TYPE_STACK)),VARIABLE);}
-#line 1889 "y.tab.c" /* yacc.c:1646  */
+#line 1894 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 40:
-#line 313 "astree.y" /* yacc.c:1646  */
+#line 318 "astree.y" /* yacc.c:1646  */
     {lst = LSTInstall(lst,(yyvsp[0].node)->varname,TypeTableLookUp(T,top_string(TYPE_STACK)),VARIABLE);}
-#line 1895 "y.tab.c" /* yacc.c:1646  */
+#line 1900 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 41:
-#line 317 "astree.y" /* yacc.c:1646  */
+#line 322 "astree.y" /* yacc.c:1646  */
     {
                                                     (yyvsp[-2].node) = insertASTParam((yyvsp[-2].node),(yyvsp[0].node));
                                                     (yyval.node) = (yyvsp[-2].node);
                                                 }
-#line 1904 "y.tab.c" /* yacc.c:1646  */
+#line 1909 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 42:
-#line 321 "astree.y" /* yacc.c:1646  */
+#line 326 "astree.y" /* yacc.c:1646  */
     {
                                                     (yyval.node) = (yyvsp[0].node);
                                                 }
-#line 1912 "y.tab.c" /* yacc.c:1646  */
+#line 1917 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 43:
-#line 327 "astree.y" /* yacc.c:1646  */
+#line 332 "astree.y" /* yacc.c:1646  */
     {TYPE_STACK = push_string(TYPE_STACK,"int");}
-#line 1918 "y.tab.c" /* yacc.c:1646  */
+#line 1923 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 44:
-#line 328 "astree.y" /* yacc.c:1646  */
+#line 333 "astree.y" /* yacc.c:1646  */
     {TYPE_STACK = push_string(TYPE_STACK,"str");}
-#line 1924 "y.tab.c" /* yacc.c:1646  */
+#line 1929 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 45:
-#line 329 "astree.y" /* yacc.c:1646  */
+#line 334 "astree.y" /* yacc.c:1646  */
     {TYPE_STACK = push_string(TYPE_STACK,(yyvsp[0].node)->varname);}
-#line 1930 "y.tab.c" /* yacc.c:1646  */
+#line 1935 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 46:
-#line 333 "astree.y" /* yacc.c:1646  */
+#line 338 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = makeTreeNode(STATEMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,(yyvsp[-1].node),(yyvsp[0].node),NULL,"STATEMENT");}
-#line 1936 "y.tab.c" /* yacc.c:1646  */
+#line 1941 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 47:
-#line 334 "astree.y" /* yacc.c:1646  */
+#line 339 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 1942 "y.tab.c" /* yacc.c:1646  */
+#line 1947 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 48:
-#line 337 "astree.y" /* yacc.c:1646  */
+#line 342 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 1948 "y.tab.c" /* yacc.c:1646  */
+#line 1953 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 49:
-#line 338 "astree.y" /* yacc.c:1646  */
+#line 343 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 1954 "y.tab.c" /* yacc.c:1646  */
+#line 1959 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 50:
-#line 339 "astree.y" /* yacc.c:1646  */
+#line 344 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 1960 "y.tab.c" /* yacc.c:1646  */
+#line 1965 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 51:
-#line 340 "astree.y" /* yacc.c:1646  */
+#line 345 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 1966 "y.tab.c" /* yacc.c:1646  */
+#line 1971 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 52:
-#line 341 "astree.y" /* yacc.c:1646  */
+#line 346 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 1972 "y.tab.c" /* yacc.c:1646  */
+#line 1977 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 53:
-#line 342 "astree.y" /* yacc.c:1646  */
+#line 347 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 1978 "y.tab.c" /* yacc.c:1646  */
+#line 1983 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 54:
-#line 343 "astree.y" /* yacc.c:1646  */
+#line 348 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 1984 "y.tab.c" /* yacc.c:1646  */
+#line 1989 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 55:
-#line 344 "astree.y" /* yacc.c:1646  */
+#line 349 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[-1].node);}
-#line 1990 "y.tab.c" /* yacc.c:1646  */
+#line 1995 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 56:
-#line 345 "astree.y" /* yacc.c:1646  */
+#line 350 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[-1].node);}
-#line 1996 "y.tab.c" /* yacc.c:1646  */
+#line 2001 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 57:
-#line 346 "astree.y" /* yacc.c:1646  */
+#line 351 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[-1].node);}
-#line 2002 "y.tab.c" /* yacc.c:1646  */
+#line 2007 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 58:
-#line 347 "astree.y" /* yacc.c:1646  */
+#line 352 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[-3].node);}
-#line 2008 "y.tab.c" /* yacc.c:1646  */
+#line 2013 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 59:
-#line 349 "astree.y" /* yacc.c:1646  */
+#line 354 "astree.y" /* yacc.c:1646  */
     {
                                                 if((yyvsp[-2].node)->nodetype == FUNCTION)
                                                 {
@@ -2023,17 +2028,17 @@ yyreduce:
                                                     exit(0);
                                                 }
                                             }
-#line 2027 "y.tab.c" /* yacc.c:1646  */
+#line 2032 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 60:
-#line 364 "astree.y" /* yacc.c:1646  */
+#line 369 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = makeTreeNode(WRITE,TypeTableLookUp(T,"void"),NULL,-1,-1,(yyvsp[-2].node),NULL,NULL,"Write");}
-#line 2033 "y.tab.c" /* yacc.c:1646  */
+#line 2038 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 61:
-#line 366 "astree.y" /* yacc.c:1646  */
+#line 371 "astree.y" /* yacc.c:1646  */
     {
                                                 if((yyvsp[-5].node)->type != TypeTableLookUp(T,"int") && (yyvsp[-5].node)->type != TypeTableLookUp(T,"str") && (yyvsp[-5].node)->nodetype != FUNCTION)
                                                     (yyval.node) = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,(yyvsp[-5].node),(yyvsp[-3].node),NULL,"=");
@@ -2043,11 +2048,11 @@ yyreduce:
                                                     exit(0);
                                                 }
                                             }
-#line 2047 "y.tab.c" /* yacc.c:1646  */
+#line 2052 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 62:
-#line 375 "astree.y" /* yacc.c:1646  */
+#line 380 "astree.y" /* yacc.c:1646  */
     {
                                                 if((yyvsp[-6].node)->type == TypeTableLookUp(T,"int") && (yyvsp[-6].node)->nodetype != FUNCTION && (yyvsp[-2].node)->type != TypeTableLookUp(T,"int") && (yyvsp[-2].node)->type != TypeTableLookUp(T,"str") && (yyvsp[-2].node)->nodetype != ARRAY_VARIABLE && (yyvsp[-2].node)->nodetype != FUNCTION)
                                                 {
@@ -2060,11 +2065,11 @@ yyreduce:
                                                     exit(0);
                                                 }
                                             }
-#line 2064 "y.tab.c" /* yacc.c:1646  */
+#line 2069 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 63:
-#line 387 "astree.y" /* yacc.c:1646  */
+#line 392 "astree.y" /* yacc.c:1646  */
     {
                                                 if((yyvsp[-3].node)->type == (yyvsp[-1].node)->type && ((yyvsp[-3].node)->nodetype != FUNCTION))
                                                     (yyval.node) = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,(yyvsp[-3].node),(yyvsp[-1].node),NULL,"=");
@@ -2073,11 +2078,11 @@ yyreduce:
                                                     exit(1);
                                                 }
                                             }
-#line 2077 "y.tab.c" /* yacc.c:1646  */
+#line 2082 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 64:
-#line 395 "astree.y" /* yacc.c:1646  */
+#line 400 "astree.y" /* yacc.c:1646  */
     {
                                                 if((yyvsp[-3].node)->type != TypeTableLookUp(T,"int") && (yyvsp[-3].node)->type != TypeTableLookUp(T,"str") && (yyvsp[-3].node)->nodetype != FUNCTION)
                                                     (yyval.node) = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,-1,-1,(yyvsp[-3].node),(yyvsp[-1].node),NULL,"=");
@@ -2087,23 +2092,23 @@ yyreduce:
                                                     exit(0);
                                                 } 
                                             }
-#line 2091 "y.tab.c" /* yacc.c:1646  */
+#line 2096 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 65:
-#line 405 "astree.y" /* yacc.c:1646  */
+#line 410 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 2097 "y.tab.c" /* yacc.c:1646  */
+#line 2102 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 66:
-#line 406 "astree.y" /* yacc.c:1646  */
+#line 411 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 2103 "y.tab.c" /* yacc.c:1646  */
+#line 2108 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 67:
-#line 408 "astree.y" /* yacc.c:1646  */
+#line 413 "astree.y" /* yacc.c:1646  */
     {
                                                                 if(!typeCheckBool((yyvsp[-7].node))){
                                                                     printf("line %d: Invalid conditional statement\n",line);
@@ -2113,11 +2118,11 @@ yyreduce:
                                                                 struct AST_Node *temp2 = makeTreeNode(ELSE,TypeTableLookUp(T,"void"),NULL,-1,-1,(yyvsp[-2].node),NULL,NULL,"ELSE");
                                                                 (yyval.node) = makeTreeNode(IF_ELSE,TypeTableLookUp(T,"void"),NULL,-1,-1,temp1,temp2,NULL,"IF_ELSE");
                                                             }
-#line 2117 "y.tab.c" /* yacc.c:1646  */
+#line 2122 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 68:
-#line 417 "astree.y" /* yacc.c:1646  */
+#line 422 "astree.y" /* yacc.c:1646  */
     {
                                                                 if(!typeCheckBool((yyvsp[-5].node))){
                                                                     printf("line %d :Invalid boolean statement\n",line);
@@ -2126,11 +2131,11 @@ yyreduce:
                                                                 struct AST_Node *temp1 = makeTreeNode(IF,TypeTableLookUp(T,"void"),NULL,-1,-1,(yyvsp[-5].node),(yyvsp[-2].node),NULL,"IF");
                                                                 (yyval.node) = makeTreeNode(IF_ELSE,TypeTableLookUp(T,"void"),NULL,-1,-1,temp1,NULL,NULL,"IF_ELSE");
                                                             }
-#line 2130 "y.tab.c" /* yacc.c:1646  */
+#line 2135 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 69:
-#line 426 "astree.y" /* yacc.c:1646  */
+#line 431 "astree.y" /* yacc.c:1646  */
     {
                                                                 if(typeCheckBool((yyvsp[-5].node)))
                                                                     (yyval.node) = makeTreeNode(WHILE,TypeTableLookUp(T,"void"),NULL,-1,-1,(yyvsp[-5].node),(yyvsp[-2].node),NULL,"WHILE");
@@ -2139,11 +2144,11 @@ yyreduce:
                                                                     exit(1);
                                                                 }
                                                             }
-#line 2143 "y.tab.c" /* yacc.c:1646  */
+#line 2148 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 70:
-#line 435 "astree.y" /* yacc.c:1646  */
+#line 440 "astree.y" /* yacc.c:1646  */
     {
                                                                     if(typeCheckBool((yyvsp[-2].node)))
                                                                         (yyval.node) = makeTreeNode(REPEAT_UNTIL,TypeTableLookUp(T,"void"),NULL,-1,-1,(yyvsp[-6].node),(yyvsp[-2].node),NULL,"REPEAT_UNTIL");
@@ -2152,11 +2157,11 @@ yyreduce:
                                                                         exit(1);
                                                                     }
                                                                 }
-#line 2156 "y.tab.c" /* yacc.c:1646  */
+#line 2161 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 71:
-#line 444 "astree.y" /* yacc.c:1646  */
+#line 449 "astree.y" /* yacc.c:1646  */
     {
                                                             if(typeCheckBool((yyvsp[-2].node)))
                                                                 (yyval.node) = makeTreeNode(DO_WHILE,TypeTableLookUp(T,"void"),NULL,-1,-1,(yyvsp[-6].node),(yyvsp[-2].node),NULL,"DO_WHILE");
@@ -2165,312 +2170,312 @@ yyreduce:
                                                                 exit(1);
                                                             }
                                                         }
-#line 2169 "y.tab.c" /* yacc.c:1646  */
+#line 2174 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 72:
-#line 454 "astree.y" /* yacc.c:1646  */
+#line 459 "astree.y" /* yacc.c:1646  */
     {
-    if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,PLUS,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"+");
-    else{
-        printf("line %d :Invalid operand\n",line);
-        exit(1);
-    }
-}
-#line 2182 "y.tab.c" /* yacc.c:1646  */
+                                                            if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,PLUS,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"+");
+                                                            else{
+                                                                printf("line %d :Invalid operand\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2187 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 73:
-#line 462 "astree.y" /* yacc.c:1646  */
+#line 467 "astree.y" /* yacc.c:1646  */
     {
-    if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MINUS,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"-");
-    else{
-        printf("line %d :Invalid operand\n",line);
-        exit(1);
-    }
-}
-#line 2195 "y.tab.c" /* yacc.c:1646  */
+                                                            if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MINUS,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"-");
+                                                            else{
+                                                                printf("line %d :Invalid operand\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2200 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 74:
-#line 470 "astree.y" /* yacc.c:1646  */
+#line 475 "astree.y" /* yacc.c:1646  */
     {
-    if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MUL,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"*");
-    else{
-        printf("line %d :Invalid operand\n",line);
-        exit(1);
-    }
-}
-#line 2208 "y.tab.c" /* yacc.c:1646  */
+                                                            if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MUL,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"*");
+                                                            else{
+                                                                printf("line %d :Invalid operand\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2213 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 75:
-#line 478 "astree.y" /* yacc.c:1646  */
+#line 483 "astree.y" /* yacc.c:1646  */
     {
-    if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,DIV,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"/");
-    else{
-        printf("line %d :Invalid operand\n",line);
-        exit(1);
-    }
-}
-#line 2221 "y.tab.c" /* yacc.c:1646  */
+                                                            if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,DIV,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"/");
+                                                            else{
+                                                                printf("line %d :Invalid operand\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2226 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 76:
-#line 486 "astree.y" /* yacc.c:1646  */
+#line 491 "astree.y" /* yacc.c:1646  */
     {
-    if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MOD,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"%");
-    else{
-        printf("line %d :Invalid operand\n",line);
-        exit(1);
-    }
-}
-#line 2234 "y.tab.c" /* yacc.c:1646  */
+                                                            if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"int"),NULL,MOD,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"%");
+                                                            else{
+                                                                printf("line %d :Invalid operand\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2239 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 77:
-#line 494 "astree.y" /* yacc.c:1646  */
+#line 499 "astree.y" /* yacc.c:1646  */
     {
-    if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,LT,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"<");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-#line 2247 "y.tab.c" /* yacc.c:1646  */
+                                                            if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,LT,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"<");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2252 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 78:
-#line 502 "astree.y" /* yacc.c:1646  */
+#line 507 "astree.y" /* yacc.c:1646  */
     {
-    if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,LE,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"<=");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-#line 2260 "y.tab.c" /* yacc.c:1646  */
+                                                            if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,LE,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"<=");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2265 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 79:
-#line 510 "astree.y" /* yacc.c:1646  */
+#line 515 "astree.y" /* yacc.c:1646  */
     {
-    if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,GT,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,">");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-#line 2273 "y.tab.c" /* yacc.c:1646  */
+                                                            if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,GT,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,">");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2278 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 80:
-#line 518 "astree.y" /* yacc.c:1646  */
+#line 523 "astree.y" /* yacc.c:1646  */
     {
-    if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,GE,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,">=");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-#line 2286 "y.tab.c" /* yacc.c:1646  */
+                                                            if(typeCheckExp((yyvsp[-2].node)) && typeCheckExp((yyvsp[0].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,GE,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,">=");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2291 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 81:
-#line 526 "astree.y" /* yacc.c:1646  */
+#line 531 "astree.y" /* yacc.c:1646  */
     {
-    if((typeCheckExp((yyvsp[-2].node)) || (!typeCheckExp((yyvsp[-2].node)) && !typeCheckBool((yyvsp[-2].node)))) && ((yyvsp[0].node)->nodetype == NULL_ || typeCheckExp((yyvsp[0].node)) || (!typeCheckExp((yyvsp[0].node)) && !typeCheckBool((yyvsp[0].node)))))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"!=");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-#line 2299 "y.tab.c" /* yacc.c:1646  */
+                                                            if((typeCheckExp((yyvsp[-2].node)) || (!typeCheckExp((yyvsp[-2].node)) && !typeCheckBool((yyvsp[-2].node)))) && ((yyvsp[0].node)->nodetype == NULL_ || typeCheckExp((yyvsp[0].node)) || (!typeCheckExp((yyvsp[0].node)) && !typeCheckBool((yyvsp[0].node)))))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"!=");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2304 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 82:
-#line 534 "astree.y" /* yacc.c:1646  */
+#line 539 "astree.y" /* yacc.c:1646  */
     {
-    if((typeCheckExp((yyvsp[-2].node)) || (!typeCheckExp((yyvsp[-2].node)) && !typeCheckBool((yyvsp[-2].node)))) && ((yyvsp[0].node)->nodetype == NULL_ || typeCheckExp((yyvsp[0].node)) || (!typeCheckExp((yyvsp[0].node)) && !typeCheckBool((yyvsp[0].node)))))
-        (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"==");
-    else{
-        printf("line %d :Invalid Operator\n",line);
-        exit(1);
-    }
-}
-#line 2312 "y.tab.c" /* yacc.c:1646  */
+                                                            if((typeCheckExp((yyvsp[-2].node)) || (!typeCheckExp((yyvsp[-2].node)) && !typeCheckBool((yyvsp[-2].node)))) && ((yyvsp[0].node)->nodetype == NULL_ || typeCheckExp((yyvsp[0].node)) || (!typeCheckExp((yyvsp[0].node)) && !typeCheckBool((yyvsp[0].node)))))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"==");
+                                                            else{
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2317 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 83:
-#line 542 "astree.y" /* yacc.c:1646  */
+#line 547 "astree.y" /* yacc.c:1646  */
     {
-                                        if(!typeCheckExp((yyvsp[-2].node)) && !typeCheckBool((yyvsp[-2].node)))
-                                            (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"==");
-                                        else
-                                        {
-                                            printf("line %d :Invalid Operator\n",line);
-                                            exit(1);
-                                        }
-                                    }
-#line 2326 "y.tab.c" /* yacc.c:1646  */
+                                                            if(!typeCheckExp((yyvsp[-2].node)) && !typeCheckBool((yyvsp[-2].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,EQ,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"==");
+                                                            else
+                                                            {
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2331 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 84:
-#line 551 "astree.y" /* yacc.c:1646  */
+#line 556 "astree.y" /* yacc.c:1646  */
     {
-                                        if(!typeCheckExp((yyvsp[-2].node)) && !typeCheckBool((yyvsp[-2].node)))
-                                            (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"!=");
-                                        else
-                                        {
-                                            printf("line %d :Invalid Operator\n",line);
-                                            exit(1);
-                                        }
-                                    }
-#line 2340 "y.tab.c" /* yacc.c:1646  */
+                                                            if(!typeCheckExp((yyvsp[-2].node)) && !typeCheckBool((yyvsp[-2].node)))
+                                                                (yyval.node) = makeTreeNode(EXPRESSION,TypeTableLookUp(T,"boolean"),NULL,NE,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"!=");
+                                                            else
+                                                            {
+                                                                printf("line %d :Invalid Operator\n",line);
+                                                                exit(1);
+                                                            }
+                                                        }
+#line 2345 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 85:
-#line 560 "astree.y" /* yacc.c:1646  */
+#line 565 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[-1].node);}
-#line 2346 "y.tab.c" /* yacc.c:1646  */
+#line 2351 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 86:
-#line 561 "astree.y" /* yacc.c:1646  */
+#line 566 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 2352 "y.tab.c" /* yacc.c:1646  */
+#line 2357 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 87:
-#line 562 "astree.y" /* yacc.c:1646  */
+#line 567 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 2358 "y.tab.c" /* yacc.c:1646  */
+#line 2363 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 88:
-#line 565 "astree.y" /* yacc.c:1646  */
+#line 570 "astree.y" /* yacc.c:1646  */
     {
-    (yyval.node) = (yyvsp[0].node);
-    lst_node_temp = LSTLookUp(lst,(yyvsp[0].node)->varname);
-    if(lst_node_temp)
-        (yyval.node)->type = lst_node_temp->type;
-    else{
-        gst_node_temp = GSTLookUp(gst,(yyvsp[0].node)->varname);
-        if(!gst_node_temp){
-            printf("line %d :Variable \"%s\" not declared\n",line,(yyval.node)->varname);
-            exit(1);
-        }
-        else
-            (yyval.node)->type = gst_node_temp->type;
-    }
-}
-#line 2378 "y.tab.c" /* yacc.c:1646  */
+                                                            (yyval.node) = (yyvsp[0].node);
+                                                            lst_node_temp = LSTLookUp(lst,(yyvsp[0].node)->varname);
+                                                            if(lst_node_temp)
+                                                                (yyval.node)->type = lst_node_temp->type;
+                                                            else{
+                                                                gst_node_temp = GSTLookUp(gst,(yyvsp[0].node)->varname);
+                                                                if(!gst_node_temp){
+                                                                    printf("line %d :Variable \"%s\" not declared\n",line,(yyval.node)->varname);
+                                                                    exit(1);
+                                                                }
+                                                                else
+                                                                    (yyval.node)->type = gst_node_temp->type;
+                                                            }
+                                                        }
+#line 2383 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 89:
-#line 580 "astree.y" /* yacc.c:1646  */
+#line 585 "astree.y" /* yacc.c:1646  */
     {
-    if((yyvsp[-1].node)->type != TypeTableLookUp(T,"int")){
-        printf("line %d :Invalid index\n",line);
-        exit(1);
-    }
-    lst_node_temp = LSTLookUp(lst,(yyvsp[-3].node)->varname);
-    if(lst_node_temp){
-        if(lst_node_temp->type_of_var != ARRAY_VARIABLE){
-            printf("line %d :Variable \"%s\" not of array type\n",line,(yyvsp[-3].node)->varname);
-            exit(1);
-        }
-        (yyvsp[-3].node)->type = lst_node_temp->type;
-        (yyval.node) = makeTreeNode(ARRAY_VARIABLE,(yyvsp[-3].node)->type,(yyvsp[-3].node)->varname,-1,-1,(yyvsp[-3].node),(yyvsp[-1].node),NULL,"ARRAY_VARIABLE");
-    }
-    else{
-        gst_node_temp = GSTLookUp(gst,(yyvsp[-3].node)->varname);
-        if(!gst_node_temp)
-        {
-            printf("line %d :Variable \"%s\" not declared\n",line,(yyvsp[-3].node)->varname);
-            exit(1);            
-        }
-        else{
-            if(gst_node_temp->type_of_var != ARRAY_VARIABLE){
-                printf("line %d :Variable \"%s\" not of array type\n",line,(yyvsp[-3].node)->varname);
-                exit(1);
-            }
-            (yyvsp[-3].node)->type = gst_node_temp->type;
-            (yyval.node) = makeTreeNode(ARRAY_VARIABLE,(yyvsp[-3].node)->type,(yyvsp[-3].node)->varname,-1,-1,(yyvsp[-3].node),(yyvsp[-1].node),gst_node_temp,"ARRAY_VARIABLE");
-        }
-    }
-}
-#line 2414 "y.tab.c" /* yacc.c:1646  */
+                                                            if((yyvsp[-1].node)->type != TypeTableLookUp(T,"int")){
+                                                                printf("line %d :Invalid index\n",line);
+                                                                exit(1);
+                                                            }
+                                                            lst_node_temp = LSTLookUp(lst,(yyvsp[-3].node)->varname);
+                                                            if(lst_node_temp){
+                                                                if(lst_node_temp->type_of_var != ARRAY_VARIABLE){
+                                                                    printf("line %d :Variable \"%s\" not of array type\n",line,(yyvsp[-3].node)->varname);
+                                                                    exit(1);
+                                                                }
+                                                                (yyvsp[-3].node)->type = lst_node_temp->type;
+                                                                (yyval.node) = makeTreeNode(ARRAY_VARIABLE,(yyvsp[-3].node)->type,(yyvsp[-3].node)->varname,-1,-1,(yyvsp[-3].node),(yyvsp[-1].node),NULL,"ARRAY_VARIABLE");
+                                                            }
+                                                            else{
+                                                                gst_node_temp = GSTLookUp(gst,(yyvsp[-3].node)->varname);
+                                                                if(!gst_node_temp)
+                                                                {
+                                                                    printf("line %d :Variable \"%s\" not declared\n",line,(yyvsp[-3].node)->varname);
+                                                                    exit(1);            
+                                                                }
+                                                                else{
+                                                                    if(gst_node_temp->type_of_var != ARRAY_VARIABLE){
+                                                                        printf("line %d :Variable \"%s\" not of array type\n",line,(yyvsp[-3].node)->varname);
+                                                                        exit(1);
+                                                                    }
+                                                                    (yyvsp[-3].node)->type = gst_node_temp->type;
+                                                                    (yyval.node) = makeTreeNode(ARRAY_VARIABLE,(yyvsp[-3].node)->type,(yyvsp[-3].node)->varname,-1,-1,(yyvsp[-3].node),(yyvsp[-1].node),gst_node_temp,"ARRAY_VARIABLE");
+                                                                }
+                                                            }
+                                                        }
+#line 2419 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 90:
-#line 611 "astree.y" /* yacc.c:1646  */
+#line 616 "astree.y" /* yacc.c:1646  */
     {
-    gst_node_temp = GSTLookUp(gst,(yyvsp[-3].node)->varname);
-    if(!gst_node_temp){
-        printf("line %d :Function \"%s\" not declared\n",line,(yyvsp[-3].node)->varname);
-        exit(1);
-    }
-    if(gst_node_temp->type_of_var != FUNCTION){
-        printf("line %d :\"%s\" not a function\n",line,(yyvsp[-3].node)->varname);
-        exit(1);
-    }
-    if(!checkASTParam(gst_node_temp->param,(yyvsp[-1].node))){
-        printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,(yyvsp[-3].node)->varname);
-        exit(1);
-    }
-    (yyvsp[-3].node)->nodetype = FUNCTION;
-    (yyvsp[-3].node)->type = gst_node_temp->type;
-    (yyvsp[-3].node)->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-    (yyvsp[-3].node)->param = (yyvsp[-1].node);
-    (yyvsp[-1].node) = NULL;
-    (yyval.node) = (yyvsp[-3].node);
-}
-#line 2440 "y.tab.c" /* yacc.c:1646  */
+                                                            gst_node_temp = GSTLookUp(gst,(yyvsp[-3].node)->varname);
+                                                            if(!gst_node_temp){
+                                                                printf("line %d :Function \"%s\" not declared\n",line,(yyvsp[-3].node)->varname);
+                                                                exit(1);
+                                                            }
+                                                            if(gst_node_temp->type_of_var != FUNCTION){
+                                                                printf("line %d :\"%s\" not a function\n",line,(yyvsp[-3].node)->varname);
+                                                                exit(1);
+                                                            }
+                                                            if(!checkASTParam(gst_node_temp->param,(yyvsp[-1].node))){
+                                                                printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,(yyvsp[-3].node)->varname);
+                                                                exit(1);
+                                                            }
+                                                            (yyvsp[-3].node)->nodetype = FUNCTION;
+                                                            (yyvsp[-3].node)->type = gst_node_temp->type;
+                                                            (yyvsp[-3].node)->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+                                                            (yyvsp[-3].node)->param = (yyvsp[-1].node);
+                                                            (yyvsp[-1].node) = NULL;
+                                                            (yyval.node) = (yyvsp[-3].node);
+                                                        }
+#line 2445 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 91:
-#line 632 "astree.y" /* yacc.c:1646  */
+#line 637 "astree.y" /* yacc.c:1646  */
     {
-    gst_node_temp = GSTLookUp(gst,(yyvsp[-2].node)->varname);
-    if(!gst_node_temp){
-        printf("line %d :Function \"%s\" not declared\n",line,(yyvsp[-2].node)->varname);
-        exit(1);
-    }
-    if(gst_node_temp->type_of_var != FUNCTION){
-        printf("line %d :\"%s\" not a function\n",line,(yyvsp[-2].node)->varname);
-        exit(1);
-    }
-    if(gst_node_temp->param->size != 0){
-        printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,(yyvsp[-2].node)->varname);
-        exit(1);
-    }
-    (yyvsp[-2].node)->nodetype = FUNCTION;
-    (yyvsp[-2].node)->type = gst_node_temp->type;
-    (yyvsp[-2].node)->param = NULL;
-    (yyval.node) = (yyvsp[-2].node);
-}
-#line 2464 "y.tab.c" /* yacc.c:1646  */
+                                                            gst_node_temp = GSTLookUp(gst,(yyvsp[-2].node)->varname);
+                                                            if(!gst_node_temp){
+                                                                printf("line %d :Function \"%s\" not declared\n",line,(yyvsp[-2].node)->varname);
+                                                                exit(1);
+                                                            }
+                                                            if(gst_node_temp->type_of_var != FUNCTION){
+                                                                printf("line %d :\"%s\" not a function\n",line,(yyvsp[-2].node)->varname);
+                                                                exit(1);
+                                                            }
+                                                            if(gst_node_temp->param->size != 0){
+                                                                printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,(yyvsp[-2].node)->varname);
+                                                                exit(1);
+                                                            }
+                                                            (yyvsp[-2].node)->nodetype = FUNCTION;
+                                                            (yyvsp[-2].node)->type = gst_node_temp->type;
+                                                            (yyvsp[-2].node)->param = NULL;
+                                                            (yyval.node) = (yyvsp[-2].node);
+                                                        }
+#line 2469 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 92:
-#line 651 "astree.y" /* yacc.c:1646  */
+#line 656 "astree.y" /* yacc.c:1646  */
     {(yyval.node) = (yyvsp[0].node);}
-#line 2470 "y.tab.c" /* yacc.c:1646  */
+#line 2475 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 93:
-#line 655 "astree.y" /* yacc.c:1646  */
+#line 660 "astree.y" /* yacc.c:1646  */
     {
                                 struct FieldListNode *found = FieldListLookUp(curr_typetableentry,(yyvsp[0].node)->varname);
                                 if(!found)
@@ -2482,11 +2487,11 @@ yyreduce:
                                 (yyval.node) = makeTreeNode(FIELD,(yyvsp[0].node)->type,(yyvsp[0].node)->varname,-1,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"FIELD");
                                 curr_typetableentry = found->type;
                             }
-#line 2486 "y.tab.c" /* yacc.c:1646  */
+#line 2491 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 94:
-#line 666 "astree.y" /* yacc.c:1646  */
+#line 671 "astree.y" /* yacc.c:1646  */
     {
                                 curr_typetableentry = NULL;
                                 lst_node_temp = LSTLookUp(lst,(yyvsp[-2].node)->varname);
@@ -2513,11 +2518,11 @@ yyreduce:
                                 (yyval.node) = makeTreeNode(FIELD,(yyvsp[0].node)->type,(yyvsp[0].node)->varname,-1,-1,(yyvsp[-2].node),(yyvsp[0].node),NULL,"FIELD");
                                 curr_typetableentry = found->type;
                             }
-#line 2517 "y.tab.c" /* yacc.c:1646  */
+#line 2522 "y.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 2521 "y.tab.c" /* yacc.c:1646  */
+#line 2526 "y.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2745,7 +2750,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 693 "astree.y" /* yacc.c:1906  */
+#line 698 "astree.y" /* yacc.c:1906  */
 
 //-------------------------Auxiliary Functions--------------------------
 void yyerror(const char *err){

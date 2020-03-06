@@ -207,6 +207,11 @@ GId :   _ID						                {
                                                     lst = LSTDelete(lst);
 							                    }
 |   _ID '[' _NUM    ']'					        {
+                                                    if(strcmp(top_string(TYPE_STACK),"int") != 0 && strcmp(top_string(TYPE_STACK),"str") != 0)
+                                                    {
+                                                        printf("*line %d : Cannot declare array of user-data type\n",line);
+                                                        exit(1);
+                                                    }
 								                    gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),ARRAY_VARIABLE,$1->varname,$3->val,NULL,lst);
                                                     lst = LSTDelete(lst);
 							                    }
