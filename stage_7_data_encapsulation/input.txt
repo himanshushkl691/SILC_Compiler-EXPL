@@ -1,0 +1,133 @@
+type
+User
+{
+	int roll;
+	str name;
+}
+List
+{
+	int a;
+	List next;
+}
+endtype
+
+decl
+	List insert(List l,int a);
+	List delete(List l,int idx);
+	int printList(List l);
+enddecl
+
+List delete(List l,int idx)
+{
+	decl
+		int ret;
+		List curr,prev;
+	enddecl
+	begin
+		prev = null;
+		curr = l;
+		while(curr != null) do
+			if(curr.a == idx) then
+				break;
+			endif;
+			prev = curr;
+			curr = curr.next;
+		endwhile;
+		if(curr == null) then
+			write("notfound");
+		else
+			if(prev != null) then
+				prev.next = curr.next;
+				ret = free(curr);
+			else
+				l = curr.next;
+			endif;
+		endif;
+		return l;
+	end
+}
+
+List insert(List l,int a)
+{
+	decl
+		List curr,new,prev;
+	enddecl
+	begin
+		new = alloc();
+		write("Afteralloc");
+		write(new);
+		new.a = a;
+		new.next = null;
+		curr = l;
+		prev = null;
+		while(curr != null) do
+			prev = curr;
+			curr = curr.next;
+		endwhile;
+		if(prev == null) then
+			l = new;
+		else
+			prev.next = new;
+		endif;
+		return l;
+	end
+}
+
+
+
+int printList(List l)
+{
+	decl
+		List curr;
+	enddecl
+	begin
+		curr = l;
+		while(curr != null) do
+			write("*");
+			write(curr.a);
+			curr = curr.next;
+		endwhile;
+		return 0;
+	end
+}
+
+int main()
+{
+	decl
+		int ret,i,a;
+		str b;
+		List lst;
+	enddecl
+	begin
+		initialize();
+		lst = null;
+		read(i);
+		ret = 0;
+		while(ret != i) do
+			lst = insert(lst,ret + 1);
+			ret = ret + 1;
+		endwhile;
+		write("First");
+		ret = printList(lst);
+		lst = delete(lst,2);
+		write("delete");
+		ret = printList(lst);
+		lst = insert(lst,4);
+		write("insert4");
+		ret = printList(lst);
+		lst = insert(lst,5);
+		write("insert5");
+		ret = printList(lst);
+		lst = delete(lst,3);
+		write("delete3");
+		ret = printList(lst);
+		lst = insert(lst,6);
+		write("insert6");
+		ret = printList(lst);
+		write("insert7");
+		lst = insert(lst,7);	
+		ret = printList(lst);
+		ret = free(lst);
+		return 0;
+	end
+}

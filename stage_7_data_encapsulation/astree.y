@@ -38,7 +38,7 @@
 %type <node> expr stringExp _ID id _END _INT    _STR    _NULL
 /*TOKENS*/
 //declaration
-%token _DECL _ENDDECL   _TYPE   _ENDTYPE
+%token _DECL _ENDDECL   _TYPE   _ENDTYPE    _CLASS  _ENDCLASS   _EXTENDS
 //operator
 %token _PLUS _MINUS _MUL _DIV _MOD
 //constants and identifiers
@@ -107,7 +107,7 @@ Body    :   _BEGIN  Slist   _RETURN stringExp ';'   _END{
 							};
 
 //-------------------------Program----------------------------
-Program :   TypeDefBlock GDeclBlock   FnDefBlock   MainBlock 	
+Program :   TypeDefBlock ClassDefBlock  GDeclBlock   FnDefBlock   MainBlock 	
                                     {
                                         $$ = NULL;
                                         printf("Parsing Completed\n");
@@ -126,7 +126,7 @@ Program :   TypeDefBlock GDeclBlock   FnDefBlock   MainBlock
                                         }
                                         exit(1);
 							        }
-|   TypeDefBlock GDeclBlock  MainBlock   		
+|   TypeDefBlock ClassDefBlock  GDeclBlock  MainBlock   		
                                     {
                                         $$ = NULL;
                                         printf("Parsing Completed\n");
@@ -141,25 +141,6 @@ Program :   TypeDefBlock GDeclBlock   FnDefBlock   MainBlock
                                                 generateExit(ft);
                                                 i = 1;
                                             }
-                                            code_generator(ft,tstack->ast,gst,tstack->lst);
-                                        }
-                                        exit(1);
-							        }
-|   TypeDefBlock MainBlock						
-                                    {
-                                        $$ = NULL;
-                                        printf("Parsing Completed\n");
-                                        generateHeader(ft);
-                                        int i = 0;
-                                        while(StackGetSize(stack)){
-                                            tstack = top(stack);
-                                            stack = pop(stack);
-                                            if(i == 0){
-                                                gst_node_temp = GSTLookUp(gst,"main");
-                                                fprintf(ft,"CALL _F%d\n",gst_node_temp->binding_addr);
-                                                generateExit(ft);
-                                                        i = 1;
-                                                }
                                             code_generator(ft,tstack->ast,gst,tstack->lst);
                                         }
                                         exit(1);
@@ -190,8 +171,27 @@ FieldDeclList:  FieldDeclList   FieldDecl   {}
 FieldDecl:  Type    _ID    ';'         {F = installField(T,F,$2->varname,top_string(TYPE_STACK));TYPE_STACK = pop_string(TYPE_STACK);}
 ;
 
+//-----------------------Class Declarations------------------
+ClassDefBlock   :                               {}
+|   _CLASS  ClassDefList    _ENDCLASS           {}
+;
+ClassDefList    :   ClassDefList    ClassDef
+|   ClassDef
+;
+ClassDef    :   Cname                           {}
+;
+Cname   :   _ID                                 {}
+|   _ID _EXTENDS    _ID                         {}
+;
+ClassFieldList  :                               {}
+|   ClassFieldList  CFid                        {}
+;
+CFid    :   _ID _ID ';'                         {}
+;
+
 //-----------------------Global Declarations------------------
-GDeclBlock  :   _DECL   GDeclList   _ENDDECL    {}
+GDeclBlock  :                                   {}
+|   _DECL   GDeclList   _ENDDECL                {}
 |   _DECL   _ENDDECL                            {}
 ;
 GDeclList   :   GDeclList   GDecl               {}

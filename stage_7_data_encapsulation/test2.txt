@@ -1,0 +1,21 @@
+type
+List
+{
+	int a;
+	List next;
+}
+endtype
+decl
+	List l;
+enddecl
+int main()
+{
+	decl
+	enddecl
+	begin
+		initialize();
+		read(l.a);
+		write(l.a);
+		return 0;
+	end
+}
