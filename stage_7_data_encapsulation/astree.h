@@ -101,6 +101,7 @@ struct FieldListNode
     char *type_info;
     int fieldIndex;
     struct TypeTableNode *type;
+    struct ClassTypeTableNode *class;
     struct FieldListNode *next;
 };
 
@@ -111,9 +112,9 @@ struct FieldList
 };
 
 struct FieldList *initFieldList();
-struct FieldListNode *newFieldListNode(char *, int, char *, struct TypeTableNode *);
-struct FieldList *installField(struct TypeTable *, struct FieldList *, char *, char *);
-void ValidateFieldList(struct TypeTableNode *);
+struct FieldListNode *newFieldListNode(char *, int, char *, struct TypeTableNode *, struct ClassTableNode *);
+struct FieldList *installField(struct TypeTable *, struct ClassTable *, struct FieldList *, char *, char *);
+void ValidateFieldList(struct TypeTableNode *, struct ClassTableNode *);
 struct FieldListNode *FieldListLookUp(struct TypeTableNode *, char *);
 void printFieldList(struct FieldList *);
 //-----------------------------------------------------------------------------------------
@@ -172,6 +173,7 @@ int LSTGetSize(struct LSTable *);
 struct GSTNode
 {
     struct TypeTableNode *type;
+    struct ClassTableNode *class;
     int type_of_var;
     char *varname;
     int binding_addr;
@@ -190,11 +192,11 @@ struct GSTable
 //for creating new global symbol table
 struct GSTable *init_GSTable();
 //for creating new node
-struct GSTNode *init_GSTNode(struct TypeTableNode *, int, char *, int, struct ParamList *, struct LSTable *);
+struct GSTNode *init_GSTNode(struct TypeTableNode *, struct ClassTableNode *, int, char *, int, struct ParamList *, struct LSTable *);
 //checks whether id is already present in symbol table if it is, it returns pointer to it o/w NULL
 struct GSTNode *GSTLookUp(struct GSTable *, char *);
 //installs identifier in symbol table
-struct GSTable *GSTInstall(struct GSTable *, struct TypeTableNode *, int, char *, int, struct ParamList *, struct LSTable *);
+struct GSTable *GSTInstall(struct GSTable *, struct TypeTableNode *, struct ClassTableNode *, int, char *, int, struct ParamList *, struct LSTable *);
 //for deleting GSTable
 struct GSTable *GSTDelete(struct GSTable *);
 //for getting size of global symbol table
@@ -203,11 +205,61 @@ int GSTableGetSize(struct GSTable *);
 void printGST(struct GSTable *);
 //-------------------------------------------------------------------------------------------------------
 
+//-------------------------------------Method List Table-----------------------------------
+struct MethodListNode
+{
+    char *name;
+    int methodIdx, Mlabel;
+    struct TypeTableNode *type;
+    struct ParamList *param;
+    struct MethodListNode *next;
+};
+
+struct MethodList
+{
+    int entry;
+    struct MethodListNode *head, *tail;
+};
+
+struct MethodList *initMethodList();
+struct MethodListNode *newMethodListNode(char *, int, int, struct TypeTableNode *, struct ParamList *);
+struct MethodListNode *MethodLookUp(struct ClassTableNode *, char *);
+struct ClassTableNode *installMethodListNode(struct ClassTableNode *, struct ClassTable *, char *, struct TypeTableNode *, struct ParamList *);
+void printMethodList(struct MethodList *);
+//-----------------------------------------------------------------------------------------
+
+//--------------------------------------Class Table----------------------------------------
+struct ClassTableNode
+{
+    char *name;
+    int classIdx, fieldCount, methodCount;
+    struct FieldList *field;
+    struct MethodList *method;
+    struct ClassTableNode *parent, *next;
+};
+
+struct ClassTable
+{
+    int entry;
+    struct ClassTableNode *head, *tail;
+};
+
+struct ClassTable *initClassTable();
+struct ClassTableNode *newClassTableNode(char *, int, int, int, struct FieldList *, struct MethodList *, struct ClassTableNode *);
+struct ClassTableNode *ClassTableLookUp(struct ClassTable *, char *);
+struct ClassTable *installClassTableNode(struct ClassTable *, struct TypeTable *, char *, char *);
+struct FieldListNode *ClassFieldLookUp(struct ClassTableNode *, char *);
+struct ClassTableNode *installClassFieldNode(struct ClassTableNode *, struct ClassTable *, struct TypeTable *, char *, char *);
+struct ClassTableNode *installClassMethodListNode(struct ClassTableNode *, struct ClassTable *, struct TypeTableNode *, char *, struct ParamList *);
+void printClassTable(struct ClassTable *);
+//-----------------------------------------------------------------------------------------
+
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
 struct AST_Node
 {
     int nodetype;
     struct TypeTableNode *type;
+    struct ClassTableNode *class;
     char *varname;
     int oper;
     int val;
@@ -219,7 +271,7 @@ struct AST_Node
 };
 
 //function declaration for Abstract Syntax Tree
-struct AST_Node *makeTreeNode(int, struct TypeTableNode *, char *, int, int, struct AST_Node *, struct AST_Node *, struct GSTNode *, char *);
+struct AST_Node *makeTreeNode(int, struct TypeTableNode *, struct ClassTableNode *, char *, int, int, struct AST_Node *, struct AST_Node *, struct GSTNode *, char *);
 //for printing syntax tree
 void ASTPrintTree(struct AST_Node *);
 //for printing argument list attached to function call node

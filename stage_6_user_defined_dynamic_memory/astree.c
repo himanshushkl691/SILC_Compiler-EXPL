@@ -238,6 +238,11 @@ struct ParamList *init_ParamList()
 
 struct ParamList *ParamInsert(struct ParamList *h, char *s, struct TypeTableNode *type, int type_of_var)
 {
+	if (type == NULL)
+	{
+		printf("line %d: invalid parameter type\n", line);
+		exit(0);
+	}
 	if (h->head == NULL)
 		h->head = h->tail = init_ParamNode(s, type, type_of_var);
 	else
@@ -420,6 +425,11 @@ struct GSTNode *GSTLookUp(struct GSTable *h, char *s)
 
 struct GSTable *GSTInstall(struct GSTable *h, struct TypeTableNode *type, int type_of_var, char *varname, int size, struct ParamList *p, struct LSTable *l)
 {
+	if (type == NULL)
+	{
+		printf("*line %d: Invalid Data type\n", line);
+		exit(0);
+	}
 	struct GSTNode *curr = GSTLookUp(h, varname);
 	if (curr)
 	{

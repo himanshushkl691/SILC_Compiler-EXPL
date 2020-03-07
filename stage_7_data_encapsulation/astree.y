@@ -172,23 +172,22 @@ FieldDecl:  Type    _ID    ';'         {F = installField(T,F,$2->varname,top_str
 ;
 
 //-----------------------Class Declarations------------------
-ClassDefBlock   :                               {}
-|   _CLASS  ClassDefList    _ENDCLASS           {}
+ClassDefBlock   :                                                                               {}
+|   _CLASS  ClassDefList    _ENDCLASS                                                           {}
 ;
-ClassDefList    :   ClassDefList    ClassDef
+ClassDefList    :   ClassDefList    ClassDef                                                    {}
 |   ClassDef
 ;
-ClassDef    :   Cname                           {}
+ClassDef    :   Cname   '{' _DECL   CFieldList   CMethodDecl _ENDDECL    CMethodDef   '}'       {}
 ;
-Cname   :   _ID                                 {}
-|   _ID _EXTENDS    _ID                         {}
+Cname   :   _ID                                                                                 {}
+|   _ID _EXTENDS    _ID                                                                         {}
 ;
-ClassFieldList  :                               {}
-|   ClassFieldList  CFid                        {}
+CFieldList  :                                                                                   {}
+|   CFieldList CFId                                                                             {}
 ;
-CFid    :   _ID _ID ';'                         {}
+CFId    :   _ID _ID ';'                                                                         {}
 ;
-
 //-----------------------Global Declarations------------------
 GDeclBlock  :                                   {}
 |   _DECL   GDeclList   _ENDDECL                {}
