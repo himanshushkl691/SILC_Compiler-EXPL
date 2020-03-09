@@ -854,93 +854,93 @@ Field:  Field   '.' _ID     {
                                 curr_classtableentry = $3->class;
                             }
 ;
-FieldFunction   :   Field   '.' _ID '(' NewArgList ')'                      {
-                                                                                method_list_node_temp = MethodLookUp($1->class,$3->varname);
-                                                                                if(!method_list_node_temp)
-                                                                                {
-                                                                                    printf("*line %d : No method \"%s\" in \"%s\"\n",line,$3->varname,$1->varname);
-                                                                                    exit(0);
-                                                                                }
-                                                                                if(!checkASTParam(method_list_node_temp->param,$5))
-                                                                                {
-                                                                                    printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,$1->varname);
-                                                                                    exit(0);
-                                                                                }
-                                                                                $3->nodetype = FUNCTION;
-                                                                                $3->type = method_list_node_temp->type;
-                                                                                $3->class = NULL;
-                                                                                $3->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-                                                                                $3->param = $5;
-                                                                                $$ = makeTreeNode(FIELDFUNCTION,$3->type,$3->class,$3->varname,-1,-1,$1,$3,NULL,"fieldfunction");
-                                                                                $5 = NULL;
-                                                                            }
-|   _ID '.' _ID '(' NewArgList ')'                                          {
-                                                                                gst_node_temp = GSTLookUp(gst,$1->varname);
-                                                                                if(!gst_node_temp)
-                                                                                {
-                                                                                    printf("*line %d : Class variable \"%s\" not declared\n",line,$1->varname);
-                                                                                    exit(0);
-                                                                                }
-                                                                                if(!gst_node_temp->class)
-                                                                                {
-                                                                                    printf("*line %d : Variable \"%s\" is not of class type\n",line,$1->varname);
-                                                                                    exit(0);
-                                                                                }
-                                                                                method_list_node_temp = MethodLookUp(gst_node_temp->class,$3->varname);
-                                                                                if(!method_list_node_temp)
-                                                                                {
-                                                                                    printf("*line %d : No method \"%s\" in class \"%s\"\n",line,$3->varname,$1->varname);
-                                                                                    exit(0);
-                                                                                }
-                                                                                if(!checkASTParam(method_list_node_temp->param,$5))
-                                                                                {
-                                                                                    printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,$1->varname);
-                                                                                    exit(0);
-                                                                                }
-                                                                                $1->nodetype = VARIABLE;
-                                                                                $1->type = gst_node_temp->type;
-                                                                                $1->class = gst_node_temp->class;
-                                                                                $3->nodetype = FUNCTION;
-                                                                                $3->type = method_list_node_temp->type;
-                                                                                $3->class = NULL;
-                                                                                $3->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-                                                                                $3->param = $5;
-                                                                                $$ = makeTreeNode(FIELDFUNCTION,$3->type,$3->class,$3->varname,-1,-1,$1,$3,NULL,"fieldfunction");
-                                                                                $5 = NULL;
-                                                                            }
-|   _SELF   '.' _ID '(' NewArgList ')'                                      {
-                                                                                if(!class_section)
-                                                                                {
-                                                                                    printf("*line %d : Invalid identifier\n",line);
-                                                                                    exit(0);
-                                                                                }
-                                                                                method_list_node_temp = MethodLookUp(C->tail,$3->varname);
-                                                                                if(!method_list_node_temp)
-                                                                                {
-                                                                                    printf("*line %d: Class \"%s\" does not have method \"%s\"\n",line,C->tail->name,$3->varname);
-                                                                                    exit(0);
-                                                                                }
-                                                                                // if(!method_list_node_temp->defined)
-                                                                                // {
-                                                                                //     printf("*line %d : Undefined reference to \"%s\"\n",line,$3->varname);
-                                                                                //     exit(0);
-                                                                                // }
-                                                                                if(!checkASTParam(method_list_node_temp->param,$5))
-                                                                                {
-                                                                                    printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,$1->varname);
-                                                                                    exit(0);
-                                                                                }
-                                                                                $1->nodetype = VARIABLE;
-                                                                                $1->type = NULL;
-                                                                                $1->class = C->tail;
-                                                                                $3->nodetype = FUNCTION;
-                                                                                $3->type = method_list_node_temp->type;
-                                                                                $3->class = NULL;
-                                                                                $3->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-                                                                                $3->param = $5;
-                                                                                $$ = makeTreeNode(FIELDFUNCTION,$3->type,$3->class,$3->varname,-1,-1,$1,$3,NULL,"fieldfunction");
-                                                                                $5 = NULL;
-                                                                            }
+FieldFunction   :   Field   '.' _ID '(' NewArgList ')'      {
+                                                                method_list_node_temp = MethodLookUp($1->class,$3->varname);
+                                                                if(!method_list_node_temp)
+                                                                {
+                                                                    printf("*line %d : No method \"%s\" in \"%s\"\n",line,$3->varname,$1->varname);
+                                                                    exit(0);
+                                                                }
+                                                                if(!checkASTParam(method_list_node_temp->param,$5))
+                                                                {
+                                                                    printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,$1->varname);
+                                                                    exit(0);
+                                                                }
+                                                                $3->nodetype = FUNCTION;
+                                                                $3->type = method_list_node_temp->type;
+                                                                $3->class = NULL;
+                                                                $3->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+                                                                $3->param = $5;
+                                                                $$ = makeTreeNode(FIELDFUNCTION,$3->type,$3->class,$3->varname,-1,-1,$1,$3,NULL,"fieldfunction");
+                                                                $5 = NULL;
+                                                            }
+|   _ID '.' _ID '(' NewArgList ')'                          {
+                                                                gst_node_temp = GSTLookUp(gst,$1->varname);
+                                                                if(!gst_node_temp)
+                                                                {
+                                                                    printf("*line %d : Class variable \"%s\" not declared\n",line,$1->varname);
+                                                                    exit(0);
+                                                                }
+                                                                if(!gst_node_temp->class)
+                                                                {
+                                                                    printf("*line %d : Variable \"%s\" is not of class type\n",line,$1->varname);
+                                                                    exit(0);
+                                                                }
+                                                                method_list_node_temp = MethodLookUp(gst_node_temp->class,$3->varname);
+                                                                if(!method_list_node_temp)
+                                                                {
+                                                                    printf("*line %d : No method \"%s\" in class \"%s\"\n",line,$3->varname,$1->varname);
+                                                                    exit(0);
+                                                                }
+                                                                if(!checkASTParam(method_list_node_temp->param,$5))
+                                                                {
+                                                                    printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,$1->varname);
+                                                                    exit(0);
+                                                                }
+                                                                $1->nodetype = VARIABLE;
+                                                                $1->type = gst_node_temp->type;
+                                                                $1->class = gst_node_temp->class;
+                                                                $3->nodetype = FUNCTION;
+                                                                $3->type = method_list_node_temp->type;
+                                                                $3->class = NULL;
+                                                                $3->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+                                                                $3->param = $5;
+                                                                $$ = makeTreeNode(FIELDFUNCTION,$3->type,$3->class,$3->varname,-1,-1,$1,$3,NULL,"fieldfunction");
+                                                                $5 = NULL;
+                                                            }
+|   _SELF   '.' _ID '(' NewArgList ')'                      {
+                                                                if(!class_section)
+                                                                {
+                                                                    printf("*line %d : Invalid identifier\n",line);
+                                                                    exit(0);
+                                                                }
+                                                                method_list_node_temp = MethodLookUp(C->tail,$3->varname);
+                                                                if(!method_list_node_temp)
+                                                                {
+                                                                    printf("*line %d: Class \"%s\" does not have method \"%s\"\n",line,C->tail->name,$3->varname);
+                                                                    exit(0);
+                                                                }
+                                                                // if(!method_list_node_temp->defined)
+                                                                // {
+                                                                //     printf("*line %d : Undefined reference to \"%s\"\n",line,$3->varname);
+                                                                //     exit(0);
+                                                                // }
+                                                                if(!checkASTParam(method_list_node_temp->param,$5))
+                                                                {
+                                                                    printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,$1->varname);
+                                                                    exit(0);
+                                                                }
+                                                                $1->nodetype = VARIABLE;
+                                                                $1->type = NULL;
+                                                                $1->class = C->tail;
+                                                                $3->nodetype = FUNCTION;
+                                                                $3->type = method_list_node_temp->type;
+                                                                $3->class = NULL;
+                                                                $3->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
+                                                                $3->param = $5;
+                                                                $$ = makeTreeNode(FIELDFUNCTION,$3->type,$3->class,$3->varname,-1,-1,$1,$3,NULL,"fieldfunction");
+                                                                $5 = NULL;
+                                                            }
 ;
 %%
 //-------------------------Auxiliary Functions--------------------------
