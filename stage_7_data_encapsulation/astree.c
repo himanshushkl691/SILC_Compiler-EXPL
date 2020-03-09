@@ -212,6 +212,8 @@ void ValidateFieldList(struct TypeTableNode *t, struct ClassTableNode *c)
 
 struct FieldListNode *FieldListLookUp(struct TypeTableNode *t, char *name)
 {
+	if (t == NULL)
+		return NULL;
 	if (t->field)
 	{
 		struct FieldListNode *curr = t->field->head;
@@ -326,10 +328,11 @@ int ParamGetSize(struct ParamList *h)
 //---------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------Local Symbol Table-----------------------------------------------
-struct LSTNode *init_LSTNode(struct TypeTableNode *type, int type_of_var, char *var, int binding)
+struct LSTNode *init_LSTNode(struct TypeTableNode *type, struct ClassTableNode *class, int type_of_var, char *var, int binding)
 {
 	struct LSTNode *newn = (struct LSTNode *)malloc(sizeof(struct LSTNode));
 	newn->type = type;
+	newn->class = class;
 	newn->type_of_var = type_of_var;
 	newn->varname = (char *)malloc(strlen(var) * sizeof(char));
 	newn->varname = strdup(var);
@@ -346,9 +349,9 @@ struct LSTable *init_LSTable()
 	return newn;
 }
 
-struct LSTable *LSTInstall(struct LSTable *h, char *varname, struct TypeTableNode *type, int type_of_var)
+struct LSTable *LSTInstall(struct LSTable *h, char *varname, struct TypeTableNode *type, struct ClassTableNode *class, int type_of_var)
 {
-	if (type == NULL)
+	if (type == NULL && class == NULL)
 	{
 		printf("*line %d: Invalid data type\n", line);
 		exit(0);
@@ -361,10 +364,10 @@ struct LSTable *LSTInstall(struct LSTable *h, char *varname, struct TypeTableNod
 	}
 	h->size++;
 	if (h->head == NULL)
-		h->head = h->tail = init_LSTNode(type, type_of_var, varname, h->size);
+		h->head = h->tail = init_LSTNode(type, class, type_of_var, varname, h->size);
 	else
 	{
-		h->tail->next = init_LSTNode(type, type_of_var, varname, h->size);
+		h->tail->next = init_LSTNode(type, class, type_of_var, varname, h->size);
 		h->tail = h->tail->next;
 	}
 	return h;
@@ -405,7 +408,10 @@ void printLST(struct LSTable *h)
 		struct LSTNode *curr = h->head;
 		while (curr)
 		{
-			printf("%s %s %d %d\n", curr->varname, curr->type->name, curr->type_of_var, curr->binding_addr);
+			if (curr->type)
+				printf("%s %s %d %d\n", curr->varname, curr->type->name, curr->type_of_var, curr->binding_addr);
+			else if (curr->class)
+				printf("%s %s %d %d\n", curr->varname, curr->class->name, curr->type_of_var, curr->binding_addr);
 			curr = curr->next;
 		}
 	}
@@ -544,7 +550,7 @@ struct MethodList *initMethodList()
 	return newn;
 }
 
-struct MethodListNode *newMethodListNode(char *name, int methodIdx, int Mlabel, struct TypeTableNode *type, struct ParamList *param)
+struct MethodListNode *newMethodListNode(char *name, int methodIdx, int Mlabel, int defined, struct TypeTableNode *type, struct ParamList *param)
 {
 	struct MethodListNode *newn = (struct MethodListNode *)malloc(sizeof(struct MethodListNode));
 	newn->name = (char *)malloc(sizeof(char) * strlen(name));
@@ -553,12 +559,15 @@ struct MethodListNode *newMethodListNode(char *name, int methodIdx, int Mlabel, 
 	newn->Mlabel = Mlabel;
 	newn->type = type;
 	newn->param = param;
+	newn->defined = defined;
 	newn->next = NULL;
 	return newn;
 }
 
 struct MethodListNode *MethodLookUp(struct ClassTableNode *c, char *name)
 {
+	if (c == NULL)
+		return NULL;
 	if (name == NULL)
 		return NULL;
 	struct MethodListNode *curr = c->method->head;
@@ -578,11 +587,16 @@ struct ClassTableNode *installMethodListNode(struct ClassTableNode *c, struct Cl
 		printf("line %d: Two functions cannot have same name\n", line);
 		exit(1);
 	}
+	if (type == NULL)
+	{
+		printf("*line %d: No type provided\n", line);
+		exit(0);
+	}
 	if (c->method->entry == 0)
-		c->method->head = c->method->tail = newMethodListNode(name, c->method->entry, getLabel(), type, param);
+		c->method->head = c->method->tail = newMethodListNode(name, c->method->entry, getLabel(), 0, type, param);
 	else
 	{
-		c->method->tail->next = newMethodListNode(name, c->method->entry, getLabel(), type, param);
+		c->method->tail->next = newMethodListNode(name, c->method->entry, getLabel(), 0, type, param);
 		c->method->tail = c->method->tail->next;
 	}
 	c->method->entry++;
@@ -666,6 +680,8 @@ struct ClassTable *installClassTableNode(struct ClassTable *C, struct TypeTable 
 
 struct FieldListNode *ClassFieldLookUp(struct ClassTableNode *c, char *name)
 {
+	if (c == NULL)
+		return NULL;
 	if (name == NULL)
 		return NULL;
 	struct FieldListNode *curr = c->field->head;
@@ -687,24 +703,74 @@ struct ClassTableNode *installClassFieldNode(struct ClassTableNode *c, struct Cl
 	return c;
 }
 
-struct ClassTableNode *installClassMethodListNode(struct ClassTableNode *c, struct ClassTable *C, struct TypeTableNode *T, char *name, struct ParamList *param)
+struct ClassTableNode *installClassMethodListNode(struct ClassTableNode *c, struct ClassTable *C, struct TypeTableNode *type, char *name, struct ParamList *param)
 {
 	if (c->method == NULL)
 		c->method = initMethodList();
-	c = installMethodListNode(c, C, name, T, param);
+	if (ClassFieldLookUp(c, name))
+	{
+		printf("*line %d: \"%s\" already declared as member field\n", line, name);
+		exit(0);
+	}
+	c = installMethodListNode(c, C, name, type, param);
 	c->methodCount++;
 	return c;
+}
+
+struct FieldList *inheritMemberField(struct ClassTableNode *c)
+{
+	struct ClassTableNode *par = c->parent;
+	while (par)
+	{
+		struct FieldListNode *curr = par->field->head;
+		while (curr)
+		{
+			c->field->tail->next = newFieldListNode(curr->name, c->field->entry, curr->type_info, curr->type, curr->class);
+			c->field->tail = c->field->tail->next;
+			c->field->entry++;
+			c->fieldCount++;
+			curr = curr->next;
+		}
+		par = par->parent;
+	}
+	return c->field;
+}
+
+struct MethodList *inheritMethod(struct ClassTableNode *c)
+{
+	struct ClassTableNode *par = c->parent;
+	while (par)
+	{
+		struct MethodListNode *curr = par->method->head;
+		while (curr)
+		{
+			struct MethodListNode *methodlistnode_temp = MethodLookUp(c, curr->name);
+			if (!methodlistnode_temp)
+			{
+				c->method->tail->next = newMethodListNode(curr->name, c->method->entry, curr->Mlabel, curr->defined, curr->type, curr->param);
+				c->method->tail = c->method->tail->next;
+				c->method->entry++;
+				c->methodCount++;
+			}
+			else if ((methodlistnode_temp->type != curr->type) || !checkParamList(methodlistnode_temp->param, curr->param))
+			{
+				printf("*line %d: invalid prototype for inherited function \"%s\"\n", line, curr->name);
+				exit(0);
+			}
+			curr = curr->next;
+		}
+		par = par->parent;
+	}
+	return c->method;
 }
 
 void printClassTable(struct ClassTable *C)
 {
 	struct ClassTableNode *curr = C->head;
+	printf("Class Table\n");
 	while (curr)
 	{
-		if (curr->parent)
-			printf("ClassName: %s\nClassIdx: %s\nfieldCount: %d\nmethodCount: %d\nparent: %s\n", curr->name, curr->classIdx, curr->fieldCount, curr->methodCount, curr->parent->name);
-		else
-			printf("ClassName: %s\nClassIdx: %s\nfieldCount: %d\nmethodCount: %d\nparent: NULL\n", curr->name, curr->classIdx, curr->fieldCount, curr->methodCount);
+		printf("ClassName: %s\nClassIdx: %s\nfieldCount: %d\nmethodCount: %d\n", curr->name, curr->classIdx, curr->fieldCount, curr->methodCount);
 		printFieldList(curr->field);
 		printMethodList(curr->method);
 		curr = curr->next;
@@ -885,7 +951,7 @@ int checkASTParam(struct ParamList *param, struct AST_Node *a)
 	struct AST_Node *curr2 = a;
 	while (curr1 && curr2)
 	{
-		if (curr1->type != curr2->type)
+		if ((curr1->type != curr2->type) || curr2->class)
 			return 0;
 		curr1 = curr1->next;
 		curr2 = curr2->next_param;
@@ -902,10 +968,15 @@ struct LSTable *ParamToLSTInstall(struct LSTable *l, struct ParamList *p)
 	int i = -3;
 	while (curr)
 	{
-		l = LSTInstall(l, curr->varname, curr->type, curr->type_of_var);
+		l = LSTInstall(l, curr->varname, curr->type, NULL, curr->type_of_var);
 		l->tail->binding_addr = i;
 		i--;
 		curr = curr->next;
+	}
+	if (class_section)
+	{
+		l = LSTInstall(l, "self", NULL, C->tail, VARIABLE);
+		l->tail->binding_addr = i;
 	}
 	return l;
 }

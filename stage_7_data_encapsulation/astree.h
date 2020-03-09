@@ -55,6 +55,7 @@
 int ADDR;
 int LABEL;
 int line;
+int class_section;
 
 //------------------------------------Static Storage Allocation---------------------------
 //returns next available address
@@ -147,6 +148,7 @@ int ParamGetSize(struct ParamList *);
 struct LSTNode
 {
     struct TypeTableNode *type;
+    struct ClassTableNode *class;
     int type_of_var;
     char *varname;
     int binding_addr;
@@ -160,9 +162,9 @@ struct LSTable
     int size;
 };
 
-struct LSTNode *init_LSTNode(struct TypeTableNode *, int, char *, int);
+struct LSTNode *init_LSTNode(struct TypeTableNode *, struct ClassTableNode *, int, char *, int);
 struct LSTable *init_LSTable();
-struct LSTable *LSTInstall(struct LSTable *, char *, struct TypeTableNode *, int);
+struct LSTable *LSTInstall(struct LSTable *, char *, struct TypeTableNode *, struct ClassTableNode *, int);
 struct LSTNode *LSTLookUp(struct LSTable *, char *);
 struct LSTable *LSTDelete(struct LSTable *);
 void printLST(struct LSTable *);
@@ -210,6 +212,7 @@ struct MethodListNode
 {
     char *name;
     int methodIdx, Mlabel;
+    int defined;
     struct TypeTableNode *type;
     struct ParamList *param;
     struct MethodListNode *next;
@@ -222,7 +225,7 @@ struct MethodList
 };
 
 struct MethodList *initMethodList();
-struct MethodListNode *newMethodListNode(char *, int, int, struct TypeTableNode *, struct ParamList *);
+struct MethodListNode *newMethodListNode(char *, int, int, int, struct TypeTableNode *, struct ParamList *);
 struct MethodListNode *MethodLookUp(struct ClassTableNode *, char *);
 struct ClassTableNode *installMethodListNode(struct ClassTableNode *, struct ClassTable *, char *, struct TypeTableNode *, struct ParamList *);
 void printMethodList(struct MethodList *);
@@ -242,7 +245,7 @@ struct ClassTable
 {
     int entry;
     struct ClassTableNode *head, *tail;
-};
+} * C;
 
 struct ClassTable *initClassTable();
 struct ClassTableNode *newClassTableNode(char *, int, int, int, struct FieldList *, struct MethodList *, struct ClassTableNode *);
@@ -251,6 +254,8 @@ struct ClassTable *installClassTableNode(struct ClassTable *, struct TypeTable *
 struct FieldListNode *ClassFieldLookUp(struct ClassTableNode *, char *);
 struct ClassTableNode *installClassFieldNode(struct ClassTableNode *, struct ClassTable *, struct TypeTable *, char *, char *);
 struct ClassTableNode *installClassMethodListNode(struct ClassTableNode *, struct ClassTable *, struct TypeTableNode *, char *, struct ParamList *);
+struct FieldList *inheritMemberField(struct ClassTableNode *);
+struct MethodList *inheritMethod(struct ClassTableNode *);
 void printClassTable(struct ClassTable *);
 //-----------------------------------------------------------------------------------------
 

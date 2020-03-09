@@ -30,23 +30,23 @@ enddecl     {return _ENDDECL;}
 type        {return _TYPE;}
 endtype     {return _ENDTYPE;}
 extends     {return _EXTENDS;}
-class       {return _CLASS;}
-endclass    {return _ENDCLASS;}
-initialize  {yylval.node = makeTreeNode(INITIALIZE,TypeTableLookUp(T,"int"),NULL,-1,-1,NULL,NULL,NULL,"initialize");return _INITIALIZE;}
-alloc       {yylval.node = makeTreeNode(ALLOC,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,"alloc");return _ALLOC;}
-free        {yylval.node = makeTreeNode(FREE,TypeTableLookUp(T,"int"),NULL,-1,-1,NULL,NULL,NULL,"free");return _FREE;}
-NULL        {yylval.node = makeTreeNode(NULL_,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,"void");return _NULL;}
-null        {yylval.node = makeTreeNode(NULL_,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,"void");return _NULL;}
-int         {yylval.node = makeTreeNode(INTEGER,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,"integer");return _INT;}
-str         {yylval.node = makeTreeNode(STRING,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,"string");return _STR;}
-break       {yylval.node = makeTreeNode(BREAK,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,yytext);return _BREAK;}
-continue    {yylval.node = makeTreeNode(CONTINUE,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,yytext);return _CONTINUE;}
-breakpoint  {yylval.node = makeTreeNode(BREAKPOINT,TypeTableLookUp(T,"void"),NULL,-1,-1,NULL,NULL,NULL,yytext);return _BREAKPOINT;}
-([\"](.)*[\"])  {yylval.node = makeTreeNode(CONSTANT,TypeTableLookUp(T,"str"),NULL,-1,-1,NULL,NULL,NULL,yytext);return _STRING;}
-({alpha}({alpha}|{digit})*) 	{yylval.node = makeTreeNode(VARIABLE,TypeTableLookUp(T,"void"),yytext,-1,-1,NULL,NULL,NULL,yytext);return _ID;}
+class       {class_section = 1;return _CLASS;}
+endclass    {class_section = 0;return _ENDCLASS;}
+initialize  {yylval.node = makeTreeNode(INITIALIZE,TypeTableLookUp(T,"int"),NULL,NULL,-1,-1,NULL,NULL,NULL,"initialize");return _INITIALIZE;}
+alloc       {yylval.node = makeTreeNode(ALLOC,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,"alloc");return _ALLOC;}
+free        {yylval.node = makeTreeNode(FREE,TypeTableLookUp(T,"int"),NULL,NULL,-1,-1,NULL,NULL,NULL,"free");return _FREE;}
+NULL        {yylval.node = makeTreeNode(NULL_,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,"void");return _NULL;}
+null        {yylval.node = makeTreeNode(NULL_,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,"void");return _NULL;}
+int         {yylval.node = makeTreeNode(INTEGER,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,"integer");return _INT;}
+str         {yylval.node = makeTreeNode(STRING,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,"string");return _STR;}
+break       {yylval.node = makeTreeNode(BREAK,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,yytext);return _BREAK;}
+continue    {yylval.node = makeTreeNode(CONTINUE,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,yytext);return _CONTINUE;}
+breakpoint  {yylval.node = makeTreeNode(BREAKPOINT,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,yytext);return _BREAKPOINT;}
+([\"](.)*[\"])  {yylval.node = makeTreeNode(CONSTANT,TypeTableLookUp(T,"str"),NULL,NULL,-1,-1,NULL,NULL,NULL,yytext);return _STRING;}
+({alpha}({alpha}|{digit})*) 	{yylval.node = makeTreeNode(VARIABLE,NULL,NULL,yytext,-1,-1,NULL,NULL,NULL,yytext);return _ID;}
 ({digit}) 	{
     number = atoi(yytext);
-    yylval.node = makeTreeNode(CONSTANT,TypeTableLookUp(T,"int"),NULL,-1,number,NULL,NULL,NULL,yytext);
+    yylval.node = makeTreeNode(CONSTANT,TypeTableLookUp(T,"int"),NULL,NULL,-1,number,NULL,NULL,NULL,yytext);
     return _NUM;
 }
 "."         {return *yytext;}

@@ -1,4 +1,8 @@
 type
+int
+{
+	int a;
+}
 User
 {
 	int roll;
@@ -15,6 +19,7 @@ decl
 	List insert(List l,int a);
 	List delete(List l,int idx);
 	int printList(List l);
+	int f1();
 enddecl
 
 List delete(List l,int idx)
@@ -101,6 +106,7 @@ int main()
 	begin
 		initialize();
 		lst = null;
+		i = f1();
 		read(i);
 		ret = 0;
 		while(ret != i) do
