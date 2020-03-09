@@ -51,6 +51,7 @@
 #define ALLOC 41
 #define FREE 42
 #define INITIALIZE 43
+#define FIELDFUNCTION 44
 
 int ADDR;
 int LABEL;
@@ -69,55 +70,6 @@ void init_storage();
 void init_Label();
 //returns next available LABEL
 int getLabel();
-//-----------------------------------------------------------------------------------------
-
-//--------------------------------------Type Table ----------------------------------------
-struct TypeTableNode
-{
-    char *name;
-    int size;
-    struct FieldList *field;
-    struct TypeTableNode *next;
-};
-
-struct TypeTable
-{
-    struct TypeTableNode *head, *tail;
-    int entry;
-} * T;
-
-struct TypeTableNode *newTypeTableNode(char *, int, struct FieldList *);
-struct TypeTable *initTypeTable();
-struct TypeTable *installTypeTableNode(struct TypeTable *, char *, int, struct FieldList *);
-struct TypeTableNode *TypeTableLookUp(struct TypeTable *, char *);
-int GetSizeType(struct TypeTableNode *);
-void printTypeTable(struct TypeTable *);
-
-//-----------------------------------------------------------------------------------------
-
-//--------------------------------------Field List-----------------------------------------
-struct FieldListNode
-{
-    char *name;
-    char *type_info;
-    int fieldIndex;
-    struct TypeTableNode *type;
-    struct ClassTypeTableNode *class;
-    struct FieldListNode *next;
-};
-
-struct FieldList
-{
-    struct FieldListNode *head, *tail;
-    int entry;
-};
-
-struct FieldList *initFieldList();
-struct FieldListNode *newFieldListNode(char *, int, char *, struct TypeTableNode *, struct ClassTableNode *);
-struct FieldList *installField(struct TypeTable *, struct ClassTable *, struct FieldList *, char *, char *);
-void ValidateFieldList(struct TypeTableNode *, struct ClassTableNode *);
-struct FieldListNode *FieldListLookUp(struct TypeTableNode *, char *);
-void printFieldList(struct FieldList *);
 //-----------------------------------------------------------------------------------------
 
 //-----------------------------------------Parameter Linked List---------------------------
@@ -143,6 +95,107 @@ struct ParamList *ParamDelete(struct ParamList *h);
 void printParamList(struct ParamList *);
 int ParamGetSize(struct ParamList *);
 //---------------------------------------------------------------------------------------------------------
+
+//--------------------------------------Type Table ----------------------------------------
+struct TypeTableNode
+{
+    char *name;
+    int size;
+    struct FieldList *field;
+    struct TypeTableNode *next;
+};
+
+struct TypeTable
+{
+    struct TypeTableNode *head, *tail;
+    int entry;
+} * T;
+
+struct TypeTableNode *newTypeTableNode(char *, int, struct FieldList *);
+struct TypeTable *initTypeTable();
+struct TypeTable *installTypeTableNode(struct TypeTable *, char *, int, struct FieldList *);
+struct TypeTableNode *TypeTableLookUp(struct TypeTable *, char *);
+int GetSizeType(struct TypeTableNode *);
+void printTypeTable(struct TypeTable *);
+
+//-----------------------------------------------------------------------------------------
+
+//--------------------------------------Class Table----------------------------------------
+struct ClassTableNode
+{
+    char *name;
+    int classIdx, fieldCount, methodCount;
+    struct FieldList *field;
+    struct MethodList *method;
+    struct ClassTableNode *parent, *next;
+};
+
+struct ClassTable
+{
+    int entry;
+    struct ClassTableNode *head, *tail;
+} * C;
+
+struct ClassTable *initClassTable();
+struct ClassTableNode *newClassTableNode(char *, int, int, int, struct FieldList *, struct MethodList *, struct ClassTableNode *);
+struct ClassTableNode *ClassTableLookUp(struct ClassTable *, char *);
+struct ClassTable *installClassTableNode(struct ClassTable *, struct TypeTable *, char *, char *);
+struct FieldListNode *ClassFieldLookUp(struct ClassTableNode *, char *);
+struct ClassTableNode *installClassFieldNode(struct ClassTableNode *, struct ClassTable *, struct TypeTable *, char *, char *);
+struct ClassTableNode *installClassMethodListNode(struct ClassTableNode *, struct ClassTable *, struct TypeTableNode *, char *, struct ParamList *);
+struct FieldList *inheritMemberField(struct ClassTableNode *);
+struct MethodList *inheritMethod(struct ClassTableNode *);
+void printClassTable(struct ClassTable *);
+//-----------------------------------------------------------------------------------------
+
+//--------------------------------------Field List-----------------------------------------
+struct FieldListNode
+{
+    char *name;
+    char *type_info;
+    int fieldIndex;
+    struct TypeTableNode *type;
+    struct ClassTableNode *class;
+    struct FieldListNode *next;
+};
+
+struct FieldList
+{
+    struct FieldListNode *head, *tail;
+    int entry;
+};
+
+struct FieldList *initFieldList();
+struct FieldListNode *newFieldListNode(char *, int, char *, struct TypeTableNode *, struct ClassTableNode *);
+struct FieldList *installField(struct TypeTable *, struct ClassTable *, struct FieldList *, char *, char *);
+void ValidateFieldList(struct TypeTableNode *, struct ClassTableNode *);
+struct FieldListNode *FieldListLookUp(struct TypeTableNode *, char *);
+void printFieldList(struct FieldList *);
+//-----------------------------------------------------------------------------------------
+
+//-------------------------------------Method List Table-----------------------------------
+struct MethodListNode
+{
+    char *name;
+    int methodIdx, Mlabel;
+    int defined;
+    struct TypeTableNode *type;
+    struct ParamList *param;
+    struct MethodListNode *next;
+};
+
+struct MethodList
+{
+    int entry;
+    struct MethodListNode *head, *tail;
+};
+
+struct MethodList *initMethodList();
+struct MethodListNode *newMethodListNode(char *, int, int, int, struct TypeTableNode *, struct ParamList *);
+struct MethodListNode *MethodLookUp(struct ClassTableNode *, char *);
+struct ClassTableNode *installMethodListNode(struct ClassTableNode *, struct ClassTable *, char *, struct TypeTableNode *, struct ParamList *);
+void printMethodList(struct MethodList *);
+//-----------------------------------------------------------------------------------------
 
 //-----------------------------------------Local Symbol Table-----------------------------------------------
 struct LSTNode
@@ -180,6 +233,7 @@ struct GSTNode
     char *varname;
     int binding_addr;
     int size;
+    int fun_defined;
     struct ParamList *param;
     struct LSTable *lst;
     struct GSTNode *next;
@@ -194,7 +248,7 @@ struct GSTable
 //for creating new global symbol table
 struct GSTable *init_GSTable();
 //for creating new node
-struct GSTNode *init_GSTNode(struct TypeTableNode *, struct ClassTableNode *, int, char *, int, struct ParamList *, struct LSTable *);
+struct GSTNode *init_GSTNode(struct TypeTableNode *, struct ClassTableNode *, int, char *, int, int, struct ParamList *, struct LSTable *);
 //checks whether id is already present in symbol table if it is, it returns pointer to it o/w NULL
 struct GSTNode *GSTLookUp(struct GSTable *, char *);
 //installs identifier in symbol table
@@ -206,58 +260,6 @@ int GSTableGetSize(struct GSTable *);
 //printing Symbol Table
 void printGST(struct GSTable *);
 //-------------------------------------------------------------------------------------------------------
-
-//-------------------------------------Method List Table-----------------------------------
-struct MethodListNode
-{
-    char *name;
-    int methodIdx, Mlabel;
-    int defined;
-    struct TypeTableNode *type;
-    struct ParamList *param;
-    struct MethodListNode *next;
-};
-
-struct MethodList
-{
-    int entry;
-    struct MethodListNode *head, *tail;
-};
-
-struct MethodList *initMethodList();
-struct MethodListNode *newMethodListNode(char *, int, int, int, struct TypeTableNode *, struct ParamList *);
-struct MethodListNode *MethodLookUp(struct ClassTableNode *, char *);
-struct ClassTableNode *installMethodListNode(struct ClassTableNode *, struct ClassTable *, char *, struct TypeTableNode *, struct ParamList *);
-void printMethodList(struct MethodList *);
-//-----------------------------------------------------------------------------------------
-
-//--------------------------------------Class Table----------------------------------------
-struct ClassTableNode
-{
-    char *name;
-    int classIdx, fieldCount, methodCount;
-    struct FieldList *field;
-    struct MethodList *method;
-    struct ClassTableNode *parent, *next;
-};
-
-struct ClassTable
-{
-    int entry;
-    struct ClassTableNode *head, *tail;
-} * C;
-
-struct ClassTable *initClassTable();
-struct ClassTableNode *newClassTableNode(char *, int, int, int, struct FieldList *, struct MethodList *, struct ClassTableNode *);
-struct ClassTableNode *ClassTableLookUp(struct ClassTable *, char *);
-struct ClassTable *installClassTableNode(struct ClassTable *, struct TypeTable *, char *, char *);
-struct FieldListNode *ClassFieldLookUp(struct ClassTableNode *, char *);
-struct ClassTableNode *installClassFieldNode(struct ClassTableNode *, struct ClassTable *, struct TypeTable *, char *, char *);
-struct ClassTableNode *installClassMethodListNode(struct ClassTableNode *, struct ClassTable *, struct TypeTableNode *, char *, struct ParamList *);
-struct FieldList *inheritMemberField(struct ClassTableNode *);
-struct MethodList *inheritMethod(struct ClassTableNode *);
-void printClassTable(struct ClassTable *);
-//-----------------------------------------------------------------------------------------
 
 //--------------------------------------Abstract Syntax Tree Declrations---------------------------------
 struct AST_Node
@@ -315,6 +317,7 @@ struct StackNode
 {
     struct AST_Node *ast;
     struct LSTable *lst;
+    struct ClassTableNode *class;
     struct StackNode *next;
 };
 
@@ -324,9 +327,9 @@ struct Stack
     int size;
 };
 
-struct StackNode *init_StackNode(struct AST_Node *, struct LSTable *);
+struct StackNode *init_StackNode(struct AST_Node *, struct LSTable *, struct ClassTableNode *);
 struct Stack *init_Stack();
-struct Stack *push(struct Stack *, struct AST_Node *, struct LSTable *);
+struct Stack *push(struct Stack *, struct AST_Node *, struct LSTable *, struct ClassTableNode *);
 struct Stack *pop(struct Stack *);
 struct StackNode *top(struct Stack *);
 int StackGetSize(struct Stack *);
@@ -354,31 +357,32 @@ int StringStackGetSize(struct StringStack *);
 //-------------------------------------------------------------------------------
 
 //-----------------------------------------Code Generation Function-------------------------------------------------------
-reg_idx expression_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
-int assignment_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
-int read_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
-int write_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
-void boolean_code_generator(FILE *, struct AST_Node *, int, struct GSTable *, struct LSTable *);
-void if_else_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
-void while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
-void repeat_until_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
-void do_while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
+reg_idx expression_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+int assignment_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+int read_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+int write_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+void boolean_code_generator(FILE *, struct AST_Node *, int, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+void if_else_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+void while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+void repeat_until_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+void do_while_code_generator(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *,struct ClassTableNode *);
 void break_code_generator(FILE *, struct AST_Node *, int, int);
 void continue_code_generator(FILE *, struct AST_Node *, int, int);
 void breakpoint_code_generator(FILE *, struct AST_Node *);
-reg_idx functionCall_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
-void return_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
-void code_generator_util(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *);
-void code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+reg_idx functionCall_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+reg_idx fieldFunctionCall_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+void return_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+void code_generator_util(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+void code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
 void generateExit(FILE *);
 void generateHeader(FILE *);
-reg_idx getArrayNodeAddress(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
-reg_idx getAddress(FILE *, char *, struct GSTable *, struct LSTable *);
-void PushArgument(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+reg_idx getArrayNodeAddress(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+reg_idx getAddress(FILE *, char *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
+void PushArgument(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
 reg_idx alloc_code_generator(FILE *);
-reg_idx free_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+reg_idx free_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
 void initialize_code_generator(FILE *);
-reg_idx getAddressOfField(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *);
+reg_idx getAddressOfField(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *,struct ClassTableNode *);
 //------------------------------------------------------------------------------------------------------------------------
 
 //-----------------------------------------------Evaluator Function-------------------------------------------------------
