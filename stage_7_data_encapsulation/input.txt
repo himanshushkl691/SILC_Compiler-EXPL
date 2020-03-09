@@ -95,6 +95,7 @@ int main()
 	begin
 		initialize();
 		l = alloc();
+		l = temp;
 		temp = null;
 		breakpoint;
 		ret = 1;
