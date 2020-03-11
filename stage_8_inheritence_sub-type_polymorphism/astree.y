@@ -28,7 +28,7 @@
 };
 
 /**/
-%type <node> _BREAK _CONTINUE _BREAKPOINT   _INITIALIZE _ALLOC  _FREE
+%type <node> _BREAK _CONTINUE _BREAKPOINT   _INITIALIZE _ALLOC  _FREE   _NEW    _DELETE
 %type <node> GDeclBlock GDeclList GDecl GIdList GId
 %type <node> LDecl LDeclBlock LDeclList IdList Type
 %type <node> TypeDefBlock   TypeDefList TypeDef FieldDeclList   FieldDecl   Field   FieldFunction
@@ -61,7 +61,7 @@
 //repeat-until
 %token _REPEAT _UNTIL
 //break, continue, breakpoint
-%token _BREAK _CONTINUE _BREAKPOINT _MAIN   _RETURN _NULL   _FREE   _ALLOC  _INITIALIZE
+%token _BREAK _CONTINUE _BREAKPOINT _MAIN   _RETURN _NULL   _FREE   _ALLOC  _INITIALIZE _NEW    _DELETE
 /*ASSOCIATIVITY*/
 %left _LT _LE
 %left _GT _GE
@@ -89,7 +89,6 @@ MainBlock   :   _INT    _MAIN   '(' ')' '{' LDeclBlock  Body    '}'
                                                 lst = LSTDelete(lst);
                                                 $$ = makeTreeNode(FUNCTION,TypeTableLookUp(T,"int"),NULL,"main",-1,-1,$7,NULL,gst_node_temp,"main");
                                                 Parserparam = ParamDelete(Parserparam);
-                                                printGST(gst);
                                                 ASTPrintTree($$);
                                                 printf("\n");
                                                 stack = push(stack,$$,gst_node_temp->lst,NULL);
@@ -114,6 +113,10 @@ Program :   TypeDefBlock ClassDefBlock  GDeclBlock   FnDefBlock   MainBlock
                                     {
                                         $$ = NULL;
                                         printf("Parsing Completed\n");
+                                        printGST(gst);
+                                        printf("\n");
+                                        printClassTable(C);
+                                        printf("\n");
                                         generateHeader(ft);
                                         int i = 0;
                                         while(StackGetSize(stack)){
@@ -125,6 +128,8 @@ Program :   TypeDefBlock ClassDefBlock  GDeclBlock   FnDefBlock   MainBlock
                                                 generateExit(ft);
                                                 i = 1;
                                             }
+                                            printLST(tstack->lst);
+                                            printf("\n");
                                             code_generator(ft,tstack->ast,gst,tstack->lst,tstack->class);
                                         }
                                         exit(1);
@@ -133,6 +138,10 @@ Program :   TypeDefBlock ClassDefBlock  GDeclBlock   FnDefBlock   MainBlock
                                     {
                                         $$ = NULL;
                                         printf("Parsing Completed\n");
+                                        printGST(gst);
+                                        printf("\n");
+                                        printClassTable(C);
+                                        printf("\n");
                                         generateHeader(ft);
                                         int i = 0;
                                         while(StackGetSize(stack)){
@@ -144,6 +153,8 @@ Program :   TypeDefBlock ClassDefBlock  GDeclBlock   FnDefBlock   MainBlock
                                                 generateExit(ft);
                                                 i = 1;
                                             }
+                                            printLST(tstack->lst);
+                                            printf("\n");
                                             code_generator(ft,tstack->ast,gst,tstack->lst,tstack->class);
                                         }
                                         exit(1);
@@ -193,7 +204,6 @@ ClassDef    :   Cname   '{' _DECL   CFieldList   CMethodDecl _ENDDECL    CMethod
                                                                                                         printf("*line %d : Class cannot have more than 8 field\n",line);
                                                                                                         exit(1);
                                                                                                     }
-                                                                                                    //C->tail->method = inheritMethod(C->tail);
                                                                                                     if(C->tail->methodCount > 8)
                                                                                                     {
                                                                                                         printf("*line %d : Class cannot have more than 8 methods\n",line);
@@ -208,8 +218,14 @@ Cname   :   _ID                                                                 
                                                                                                     TYPE_STACK = push_string(TYPE_STACK,$1->varname);
                                                                                                 }
 |   _ID _EXTENDS    _ID                                                                         {
+                                                                                                    if(!ClassTableLookUp(C,$3->varname))
+                                                                                                    {
+                                                                                                        printf("*line %d : Class \"%s\" not defined\n",line,$3->varname);
+                                                                                                        exit(0);
+                                                                                                    }
                                                                                                     C = installClassTableNode(C,T,$1->varname,$3->varname);
-                                                                                                    //C->tail->field = inheritMemberField(C->tail);
+                                                                                                    C->tail = inheritMemberField(C->tail);
+                                                                                                    C->tail = inheritMethod(C->tail);
                                                                                                     TYPE_STACK = push_string(TYPE_STACK,$1->varname);
                                                                                                 }
 ;
@@ -248,7 +264,10 @@ GIdList :   GIdList ',' GId                     {}
 |   GId                                         {}
 ;
 GId :   _ID						                {
-								                    gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),ClassTableLookUp(C,top_string(TYPE_STACK)),VARIABLE,$1->varname,1,NULL,lst);
+                                                    if(ClassTableLookUp(C,top_string(TYPE_STACK)))
+								                        gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),ClassTableLookUp(C,top_string(TYPE_STACK)),VARIABLE,$1->varname,2,NULL,lst);
+                                                    else
+                                                        gst = GSTInstall(gst,TypeTableLookUp(T,top_string(TYPE_STACK)),ClassTableLookUp(C,top_string(TYPE_STACK)),VARIABLE,$1->varname,1,NULL,lst);
                                                     lst = LSTDelete(lst);
 							                    }
 |   _ID '[' _NUM    ']'					        {
@@ -314,12 +333,12 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'
                                                     }
                                                     RET_TYPE = NULL;
                                                     gst_node_temp->lst = lst;
-                                                    gst_node_temp->fun_defined = 1;
                                                     lst = LSTDelete(lst);
                                                     Parserparam = ParamDelete(Parserparam);
                                                     $$ = makeTreeNode(FUNCTION,TypeTableLookUp(T,top_string(TYPE_STACK)),NULL,$2->varname,-1,-1,$8,NULL,gst_node_temp,"FUNCTION");
                                                     TYPE_STACK = pop_string(TYPE_STACK);
                                                     printGST(gst);
+                                                    printClassTable(C);
                                                     ASTPrintTree($$);
                                                     printf("\n");
                                                     stack = push(stack,$$,gst_node_temp->lst,NULL);
@@ -328,7 +347,7 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'
                                                 else
                                                 {
                                                     method_list_node_temp = MethodLookUp(C->tail,$2->varname);
-                                                    if(!method_list_node_temp)
+                                                    if(!method_list_node_temp || (!method_list_node_temp->overridden && method_list_node_temp->inherited))
                                                     {
                                                         printf("line %d :\"%s\" function not declared in class\n",line,$2->varname);
                                                         exit(1);
@@ -348,10 +367,10 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'
                                                     }
                                                     RET_TYPE = NULL;
                                                     Parserparam = ParamDelete(Parserparam);
-                                                    method_list_node_temp->defined = 1;
                                                     $$ = makeTreeNode(FUNCTION,TypeTableLookUp(T,top_string(TYPE_STACK)),NULL,$2->varname,-1,-1,$8,NULL,NULL,"FUNCTION");
                                                     TYPE_STACK = pop_string(TYPE_STACK);
-                                                    printLST(lst);
+                                                    printGST(gst);
+                                                    printClassTable(C);
                                                     ASTPrintTree($$);
                                                     printf("\n");
                                                     stack = push(stack,$$,lst,C->tail);
@@ -382,12 +401,12 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'
                                                     }
                                                     RET_TYPE = NULL;
                                                     gst_node_temp->lst = lst;
-                                                    gst_node_temp->fun_defined = 1;
                                                     lst = LSTDelete(lst);
                                                     Parserparam = ParamDelete(Parserparam);
                                                     $$ = makeTreeNode(FUNCTION,TypeTableLookUp(T,top_string(TYPE_STACK)),NULL,$2->varname,-1,-1,$7,NULL,gst_node_temp,"FUNCTION");
                                                     TYPE_STACK = pop_string(TYPE_STACK);
                                                     printGST(gst);
+                                                    printClassTable(C);
                                                     ASTPrintTree($$);
                                                     printf("\n");
                                                     stack = push(stack,$$,gst_node_temp->lst,NULL);
@@ -396,7 +415,7 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'
                                                 else
                                                 {
                                                     method_list_node_temp = MethodLookUp(C->tail,$2->varname);
-                                                    if(!method_list_node_temp)
+                                                    if(!method_list_node_temp || (!method_list_node_temp->overridden && method_list_node_temp->inherited))
                                                     {
                                                         printf("line %d :\"%s\" function not declared in class\n",line,$2->varname);
                                                         exit(1);
@@ -416,10 +435,10 @@ FnDef   :   Type    _ID '(' ParamList   ')' '{' LDeclBlock  Body    '}'
                                                     }
                                                     RET_TYPE = NULL;
                                                     Parserparam = ParamDelete(Parserparam);
-                                                    method_list_node_temp->defined = 1;
                                                     $$ = makeTreeNode(FUNCTION,TypeTableLookUp(T,top_string(TYPE_STACK)),NULL,$2->varname,-1,-1,$7,NULL,NULL,"FUNCTION");
                                                     TYPE_STACK = pop_string(TYPE_STACK);
-                                                    printLST(lst);
+                                                    printGST(gst);
+                                                    printClassTable(C);
                                                     ASTPrintTree($$);
                                                     printf("\n");
                                                     stack = push(stack,$$,lst,C->tail);
@@ -524,8 +543,50 @@ Assgstmt:   id '='  _ALLOC  '(' ')' ';'     {
                                                     exit(0);
                                                 }
                                             }
+|   id  '=' _NEW    '(' _ID  ')' ';'        {
+                                                curr_classtableentry = ClassTableLookUp(C,$5->varname);
+                                                if(!curr_classtableentry)
+                                                {
+                                                    printf("*line %d: Class \"%s\" is not defined\n",line,$5->varname);
+                                                    exit(0);
+                                                }
+                                                if(!$1->type && $1->class && $1->nodetype != FUNCTION)
+                                                {
+                                                    if(checkInheritence($1->class,curr_classtableentry))
+                                                    {
+                                                        struct AST_Node *temp0,*temp1;
+                                                        temp0 = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,NULL,-1,-1,$1,$3,NULL,"=");
+                                                        temp1 = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,NULL,-1,-1,$1,$5,NULL,"vftpointerassg");
+                                                        $$ = makeTreeNode(NEW,TypeTableLookUp(T,"void"),NULL,NULL,-1,-1,temp0,temp1,NULL,"new");
+                                                    }
+                                                    else
+                                                    {
+                                                        printf("*line %d: Class \"%s\" is not descendant of \"%s\"\n",line,$5->varname,$1->class->name);
+                                                        exit(0);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    printf("*line %d: Variable \"%s\" not an object of a class\n",line,$1->varname);
+                                                    exit(0);
+                                                }
+                                            }
+|   _DELETE '(' id  ')' ';'                 {
+                                                if($3->class && !$3->type && $3->nodetype != FUNCTION && $3->nodetype != ARRAY_VARIABLE)
+                                                {
+                                                    $1->left = $3;
+                                                    $$ = makeTreeNode(DELETE,TypeTableLookUp(T,"void"),NULL,NULL,-1,-1,$1,$3,NULL,"delete");
+                                                }
+                                                else
+                                                {
+                                                    printf("*line %d: Only objects of a class can be argumnets\n",line);
+                                                    exit(0);
+                                                }
+                                            }
 |   id  '=' stringExp ';'                   {
-                                                if($1->type == $3->type && ($1->nodetype != FUNCTION))
+                                                if($1->type && $3->type && $1->type == $3->type && ($1->nodetype != FUNCTION))
+                                                    $$ = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,NULL,-1,-1,$1,$3,NULL,"=");
+                                                else if($1->class && $3->class && checkInheritence($1->class,$3->class))
                                                     $$ = makeTreeNode(ASSIGNMENT,TypeTableLookUp(T,"void"),NULL,NULL,-1,-1,$1,$3,NULL,"=");
                                                 else{
                                                     printf("line %d :Invalid assignment to \"%s\"\n",line,$1->varname);
@@ -714,7 +775,10 @@ id: _ID                                                 {
                                                                     exit(1);
                                                                 }
                                                                 else
+                                                                {
                                                                     $$->type = gst_node_temp->type;
+                                                                    $$->class = gst_node_temp->class;
+                                                                }
                                                             }
                                                         }
 |   _ID '[' expr ']'                                    {
@@ -758,11 +822,6 @@ id: _ID                                                 {
                                                                 printf("line %d :\"%s\" not a function\n",line,$1->varname);
                                                                 exit(1);
                                                             }
-                                                            // if(!gst_node_temp->fun_defined)
-                                                            // {
-                                                            //     printf("*line %d : Undefined reference to \"%s\"\n",line,$1->varname);
-                                                            //     exit(0);
-                                                            // }
                                                             if(!checkASTParam(gst_node_temp->param,$3)){
                                                                 printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,$1->varname);
                                                                 exit(1);
@@ -920,11 +979,6 @@ FieldFunction   :   Field   '.' _ID '(' NewArgList ')'      {
                                                                     printf("*line %d: Class \"%s\" does not have method \"%s\"\n",line,C->tail->name,$3->varname);
                                                                     exit(0);
                                                                 }
-                                                                // if(!method_list_node_temp->defined)
-                                                                // {
-                                                                //     printf("*line %d : Undefined reference to \"%s\"\n",line,$3->varname);
-                                                                //     exit(0);
-                                                                // }
                                                                 if(!checkASTParam(method_list_node_temp->param,$5))
                                                                 {
                                                                     printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,$1->varname);

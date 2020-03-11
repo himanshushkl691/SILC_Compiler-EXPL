@@ -1,0 +1,49 @@
+class
+List
+{
+	decl
+		int a;
+		str b;
+		int initList(int a,str b);
+		int getDetail();
+	enddecl
+	int initList(int a,str b)
+	{
+		decl
+		enddecl
+		begin
+			self.a = a;
+			self.b = b;
+			return 1;
+		end
+	}
+	int getDetail()
+	{
+		decl
+		enddecl
+		begin
+			write(self.a);
+			write(self.b);
+			return 1;
+		end
+	}
+}
+endclass
+
+decl
+	List l;
+enddecl
+
+int main()
+{
+	decl
+		int ret;
+	enddecl
+	begin
+		initialize();
+		l = alloc();
+		ret = l.initList(1,"hello");
+		ret = l.getDetail();
+		return 0;
+	end
+}

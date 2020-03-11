@@ -131,6 +131,8 @@ struct FieldListNode *newFieldListNode(char *name, int fieldindex, char *type_in
 
 struct FieldList *installField(struct TypeTable *t, struct ClassTable *C, struct FieldList *fl, char *name, char *type_info)
 {
+	if (fl == NULL)
+		fl = initFieldList();
 	int error = 0;
 	struct FieldListNode *curr = fl->head;
 	while (curr)
@@ -156,6 +158,8 @@ struct FieldList *installField(struct TypeTable *t, struct ClassTable *C, struct
 		fl->tail->next = newFieldListNode(name, fl->entry, type_info, proceed1, proceed2);
 		fl->tail = fl->tail->next;
 	}
+	if (proceed2)
+		fl->entry++;
 	fl->entry++;
 	return fl;
 }
@@ -551,7 +555,7 @@ struct MethodList *initMethodList()
 	return newn;
 }
 
-struct MethodListNode *newMethodListNode(char *name, int methodIdx, int Mlabel, int defined, struct TypeTableNode *type, struct ParamList *param)
+struct MethodListNode *newMethodListNode(char *name, int methodIdx, int Mlabel, int inherited, int overridden, struct TypeTableNode *type, struct ParamList *param)
 {
 	struct MethodListNode *newn = (struct MethodListNode *)malloc(sizeof(struct MethodListNode));
 	newn->name = (char *)malloc(sizeof(char) * strlen(name));
@@ -560,7 +564,8 @@ struct MethodListNode *newMethodListNode(char *name, int methodIdx, int Mlabel, 
 	newn->Mlabel = Mlabel;
 	newn->type = type;
 	newn->param = param;
-	newn->defined = defined;
+	newn->overridden = overridden;
+	newn->inherited = inherited;
 	newn->next = NULL;
 	return newn;
 }
@@ -594,10 +599,10 @@ struct ClassTableNode *installMethodListNode(struct ClassTableNode *c, struct Cl
 		exit(0);
 	}
 	if (c->method->entry == 0)
-		c->method->head = c->method->tail = newMethodListNode(name, c->method->entry, getLabel(), 0, type, param);
+		c->method->head = c->method->tail = newMethodListNode(name, c->method->entry, getLabel(), 0, 0, type, param);
 	else
 	{
-		c->method->tail->next = newMethodListNode(name, c->method->entry, getLabel(), 0, type, param);
+		c->method->tail->next = newMethodListNode(name, c->method->entry, getLabel(), 0, 0, type, param);
 		c->method->tail = c->method->tail->next;
 	}
 	c->method->entry++;
@@ -610,7 +615,7 @@ void printMethodList(struct MethodList *M)
 	printf("Method List\n");
 	while (curr)
 	{
-		printf("MethodName: %s\nMethodIdx: %d\nMethodLabel: %d\nMethodType: %s\n", curr->name, curr->methodIdx, curr->Mlabel, curr->type->name);
+		printf("MethodName: %s\nMethodIdx: %d\nMethodLabel: %d\nMethodType: %s\nInherited: %d\nOverridden: %d\n", curr->name, curr->methodIdx, curr->Mlabel, curr->type->name, curr->inherited, curr->overridden);
 		printParamList(curr->param);
 		curr = curr->next;
 	}
@@ -700,7 +705,7 @@ struct ClassTableNode *installClassFieldNode(struct ClassTableNode *c, struct Cl
 	if (c->field == NULL)
 		c->field = initFieldList();
 	c->field = installField(T, C, c->field, name, type);
-	c->fieldCount++;
+	c->fieldCount = c->field->entry;
 	return c;
 }
 
@@ -708,13 +713,105 @@ struct ClassTableNode *installClassMethodListNode(struct ClassTableNode *c, stru
 {
 	if (c->method == NULL)
 		c->method = initMethodList();
-	if (ClassFieldLookUp(c, name))
+	struct MethodListNode *found = MethodLookUp(c, name);
+	if (!found)
 	{
-		printf("*line %d: \"%s\" already declared as member field\n", line, name);
+		c = installMethodListNode(c, C, name, type, param);
+		c->methodCount++;
+	}
+	else
+	{
+		if (!checkParamList(found->param, param))
+		{
+			printf("*line %d: Formal parameter does not match with declaration in ancestor class\n", line);
+			exit(0);
+		}
+		else if (found->type != type)
+		{
+			printf("*line %d: Return type does not match with declaration in ancestor class\n", line);
+			exit(0);
+		}
+		else if (!found->overridden && found->inherited)
+		{
+			found->overridden = 1;
+			found->Mlabel = getLabel();
+		}
+		else
+		{
+			printf("*line %d: \"%s\" already declared as member field\n", line, name);
+			exit(0);
+		}
+	}
+	return c;
+}
+
+struct ClassTableNode *checkInheritence(struct ClassTableNode *A, struct ClassTableNode *B)
+{
+	if (!B || !A)
+		return NULL;
+	struct ClassTableNode *curr;
+	curr = B;
+	while (curr)
+	{
+		if (curr == A)
+		{
+			return curr;
+		}
+		curr = curr->parent;
+	}
+	return NULL;
+}
+
+struct ClassTableNode *inheritMemberField(struct ClassTableNode *c)
+{
+	if (c == NULL)
+		return c;
+	if (c == c->parent)
+	{
+		printf("*line %d: Class cannot inherit from itself\n", line);
 		exit(0);
 	}
-	c = installMethodListNode(c, C, name, type, param);
-	c->methodCount++;
+	struct ClassTableNode *par = c->parent;
+	if (par == NULL)
+		return c;
+	struct FieldListNode *curr = par->field->head;
+	while (curr)
+	{
+		c = installClassFieldNode(c, C, T, curr->name, curr->type_info);
+		curr = curr->next;
+	}
+	return c;
+}
+
+struct ClassTableNode *inheritMethod(struct ClassTableNode *c)
+{
+	if (c == NULL)
+		return c;
+	if (c == c->parent)
+	{
+		printf("*line %d: Class cannot inherit from itself\n", line);
+		exit(0);
+	}
+	struct ClassTableNode *par = c->parent;
+	if (par == NULL)
+		return c;
+	struct MethodListNode *curr = par->method->head;
+	while (curr)
+	{
+		if (c->method == NULL)
+			c->method = initMethodList();
+		struct MethodListNode *newn = newMethodListNode(curr->name, curr->methodIdx, curr->Mlabel, 1, 0, curr->type, curr->param);
+		if (c->method->entry == 0)
+			c->method->head = c->method->tail = newn;
+		else
+		{
+			c->method->tail->next = newn;
+			c->method->tail = c->method->tail->next;
+		}
+		c->method->entry++;
+		c->methodCount++;
+		curr = curr->next;
+	}
 	return c;
 }
 
@@ -724,7 +821,10 @@ void printClassTable(struct ClassTable *C)
 	printf("Class Table\n");
 	while (curr)
 	{
-		printf("ClassName: %s\nClassIdx: %d\nfieldCount: %d\nmethodCount: %d\n", curr->name, curr->classIdx, curr->fieldCount, curr->methodCount);
+		if (curr->parent)
+			printf("ClassName: %s\nClassIdx: %d\nfieldCount: %d\nmethodCount: %d\nParent: %s\n", curr->name, curr->classIdx, curr->fieldCount, curr->methodCount, curr->parent->name);
+		else
+			printf("ClassName: %s\nClassIdx: %d\nfieldCount: %d\nmethodCount: %d\nParent: NULL\n", curr->name, curr->classIdx, curr->fieldCount, curr->methodCount);
 		printFieldList(curr->field);
 		printMethodList(curr->method);
 		curr = curr->next;
@@ -930,7 +1030,7 @@ struct LSTable *ParamToLSTInstall(struct LSTable *l, struct ParamList *p)
 	if (class_section)
 	{
 		l = LSTInstall(l, "self", NULL, C->tail, VARIABLE);
-		l->tail->binding_addr = i;
+		l->tail->binding_addr = i - 1;
 	}
 	return l;
 }
@@ -1109,7 +1209,7 @@ reg_idx expression_code_generator(FILE *ft, struct AST_Node *root, struct GSTabl
 	else if (root->nodetype == NULL_)
 	{
 		reg_idx id = getReg();
-		fprintf(ft, "MOV R%d, -1\n", id);
+		fprintf(ft, "MOV R%d, 65536\n", id);
 		return id;
 	}
 	else if (root->nodetype == ALLOC)
@@ -1161,6 +1261,18 @@ int assignment_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g
 		{
 			reg_idx aRes = getAddress(ft, root->left->varname, g, l, class);
 			fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
+			if (root->left->class && root->right->nodetype == NULL_)
+			{
+				fprintf(ft, "ADD R%d, 1\n", aRes);
+				fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
+			}
+			if (root->left->class && root->right->class)
+			{
+				fprintf(ft, "ADD R%d, 1\n", aRes);
+				reg_idx z = getVFTPointer(ft, root->right, g, l, class);
+				fprintf(ft, "MOV [R%d], R%d\n", aRes, z);
+				z = freeReg();
+			}
 			aRes = freeReg();
 		}
 		else if (root->left->nodetype == ARRAY_VARIABLE)
@@ -1173,6 +1285,18 @@ int assignment_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g
 		{
 			reg_idx aRes = getAddressOfField(ft, root->left, g, l, class);
 			fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
+			if (root->left->class && root->right->nodetype == NULL_)
+			{
+				fprintf(ft, "ADD R%d, 1\n", aRes);
+				fprintf(ft, "MOV [R%d], R%d\n", aRes, id);
+			}
+			if (root->left->class && root->right->class)
+			{
+				fprintf(ft, "ADD R%d, 1\n", aRes);
+				reg_idx z = getVFTPointer(ft, root->right, g, l, class);
+				fprintf(ft, "MOV [R%d], R%d\n", aRes, z);
+				z = freeReg();
+			}
 			aRes = freeReg();
 		}
 		id = freeReg();
@@ -1444,9 +1568,14 @@ reg_idx fieldFunctionCall_code_generator(FILE *ft, struct AST_Node *root, struct
 			freeReg();
 		}
 	}
+	//pushing object
 	reg_idx z = expression_code_generator(ft, root->left, g, l, class);
 	fprintf(ft, "PUSH R%d\n", z);
 	z = freeReg();
+	z = getVFTPointer(ft, root->left, g, l, class);
+	fprintf(ft, "PUSH R%d\n", z);
+	z = freeReg();
+
 	PushArgument(ft, root->right->param, g, l, class);
 	z = getReg();
 	fprintf(ft, "PUSH R%d\n", z);
@@ -1457,7 +1586,7 @@ reg_idx fieldFunctionCall_code_generator(FILE *ft, struct AST_Node *root, struct
 	while (temp--)
 		getReg();
 	z = getReg();
-	temp = ParamGetSize(found->param) + 2;
+	temp = ParamGetSize(found->param) + 3;
 	int i = 0;
 	reg_idx t = getReg();
 	while (temp--)
@@ -1474,6 +1603,27 @@ reg_idx fieldFunctionCall_code_generator(FILE *ft, struct AST_Node *root, struct
 	for (int i = cnt - 1; i >= 0; i--)
 		fprintf(ft, "POP R%d\n", i);
 	return z;
+}
+
+void new_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l, struct ClassTableNode *class)
+{
+	assignment_code_generator(ft, root->left, g, l, class);
+	reg_idx z = getClassVFTPointer(ft, ClassTableLookUp(C, root->right->right->varname));
+	reg_idx y = getVFTPointerAddress(ft, root->left->left, g, l, class);
+	fprintf(ft, "MOV [R%d], R%d\n", y, z);
+	y = freeReg();
+	z = freeReg();
+	return;
+}
+
+void delete_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l, struct ClassTableNode *class)
+{
+	reg_idx z = free_code_generator(ft, root->left, g, l, class);
+	z = freeReg();
+	z = getVFTPointerAddress(ft, root->left->left, g, l, class);
+	fprintf(ft, "MOV [R%d], 65536\n", z);
+	z = freeReg();
+	return;
 }
 
 void return_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *gst, struct LSTable *lst, struct ClassTableNode *class)
@@ -1561,6 +1711,16 @@ void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel
 			initialize_code_generator(ft);
 			return;
 		}
+		else if (root->nodetype == NEW)
+		{
+			new_code_generator(ft, root, g, l, class);
+			return;
+		}
+		else if (root->nodetype == DELETE)
+		{
+			delete_code_generator(ft, root, g, l, class);
+			return;
+		}
 		code_generator_util(ft, root->left, blabel, clabel, g, l, class);
 		code_generator_util(ft, root->right, blabel, clabel, g, l, class);
 	}
@@ -1610,6 +1770,34 @@ reg_idx getAddress(FILE *ft, char *varname, struct GSTable *g, struct LSTable *l
 	}
 }
 
+reg_idx getVFTPointerAddress(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l, struct ClassTableNode *class)
+{
+	reg_idx z;
+	if (root->nodetype == VARIABLE)
+		z = getAddress(ft, root->varname, g, l, class);
+	else if (root->nodetype == FIELD)
+		z = getAddressOfField(ft, root, g, l, class);
+	fprintf(ft, "ADD R%d, 1\n", z);
+	return z;
+}
+
+reg_idx getVFTPointer(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l, struct ClassTableNode *class)
+{
+	reg_idx z = getVFTPointerAddress(ft, root, g, l, class);
+	fprintf(ft, "MOV R%d, [R%d]\n", z, z);
+	return z;
+}
+
+reg_idx getClassVFTPointer(FILE *ft, struct ClassTableNode *c)
+{
+	int class_idx = ClassTableLookUp(C, c->name)->classIdx;
+	reg_idx z = getReg();
+	fprintf(ft, "MOV R%d, %d\n", z, class_idx);
+	fprintf(ft, "MUL R%d, 8\n", z);
+	fprintf(ft, "ADD R%d, 4096\n", z);
+	return z;
+}
+
 reg_idx getArrayNodeAddress(FILE *ft, struct AST_Node *root, struct GSTable *g, struct LSTable *l, struct ClassTableNode *class)
 {
 	struct GSTNode *curr = GSTLookUp(g, root->left->varname);
@@ -1641,7 +1829,7 @@ reg_idx free_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, 
 	fprintf(ft, "MOV R%d, [R%d]\n", id, id);
 	reg_idx temp = getReg();
 	fprintf(ft, "PUSH R%d\nMOV R%d, \"Free\"\nPUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\nCALL 0\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", z, temp, temp, id, temp, temp, temp, id, temp, temp, temp, temp, z);
-	fprintf(ft, "MOV [R%d], -1\n", z);
+	fprintf(ft, "MOV [R%d], 65536\n", z);
 	temp = freeReg();
 	z = freeReg();
 	return id;

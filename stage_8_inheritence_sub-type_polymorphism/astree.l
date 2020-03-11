@@ -35,7 +35,9 @@ endclass    {class_section = 0;return _ENDCLASS;}
 self        {yylval.node = makeTreeNode(VARIABLE,NULL,NULL,yytext,-1,-1,NULL,NULL,NULL,"self");return _SELF;}
 initialize  {yylval.node = makeTreeNode(INITIALIZE,TypeTableLookUp(T,"int"),NULL,NULL,-1,-1,NULL,NULL,NULL,"initialize");return _INITIALIZE;}
 alloc       {yylval.node = makeTreeNode(ALLOC,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,"alloc");return _ALLOC;}
+new         {yylval.node = makeTreeNode(ALLOC,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,"alloc");return _NEW;}
 free        {yylval.node = makeTreeNode(FREE,TypeTableLookUp(T,"int"),NULL,NULL,-1,-1,NULL,NULL,NULL,"free");return _FREE;}
+delete      {yylval.node = makeTreeNode(FREE,TypeTableLookUp(T,"int"),NULL,NULL,-1,-1,NULL,NULL,NULL,"free");return _DELETE;}
 NULL        {yylval.node = makeTreeNode(NULL_,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,"void");return _NULL;}
 null        {yylval.node = makeTreeNode(NULL_,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,"void");return _NULL;}
 int         {yylval.node = makeTreeNode(INTEGER,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,"integer");return _INT;}
@@ -71,8 +73,8 @@ breakpoint  {yylval.node = makeTreeNode(BREAKPOINT,NULL,NULL,NULL,-1,-1,NULL,NUL
 ([>][=])	{return _GE;}
 ([=][=])	{return _EQ;}
 ([!][=])	{return _NE;}
-[ \t]   {}
-[\n]    {line++;}
+[ \t]       {}
+[\n]        {line++;}
 .   {printf("Unknown character at line number %d\n",line);exit(1);}
 %%
 int yywrap(){

@@ -1,0 +1,38 @@
+type
+List
+{
+	int a;
+	List next;
+}
+endtype
+decl
+	List lst;
+enddecl
+int main()
+{
+	decl
+		int ret,i;
+		List prev;
+	enddecl
+	begin
+		initialize();
+		i = 0;
+		prev = null;
+		while(i < 128) do
+			lst = alloc();
+			write(lst);
+			if(lst == null)	then
+				write("Error");
+				break;
+			endif;
+			prev = lst;
+			i = i + 1;
+		endwhile;
+		ret = free(prev);
+		lst = alloc();
+		if(lst != null) then
+			write("done");
+		endif;
+		return 0;
+	end
+}
