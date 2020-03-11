@@ -13,7 +13,7 @@
     struct LSTable *lst;
     struct LSTNode *lst_node_temp;
     struct ParamList *Parserparam;
-    struct AST_Node *ast_node_temp;
+    struct AST_Node *ast_node_temp,*paramAST;
     struct MethodListNode *method_list_node_temp;
     struct Stack *stack;
     struct StackNode *tstack;
@@ -472,14 +472,11 @@ IdList  :   IdList  ',' _ID                     {lst = LSTInstall(lst,$3->varnam
 ;
 
 //----------------------ArgList---------------------------
-NewArgList  :                                   {$$ = NULL;}
-|   ArgList                                     {$$ = $1;}
+NewArgList  :                                   {}
+|   ArgList                                     {}
 ;
-ArgList :   ArgList ',' stringExp               {
-                                                    $1 = insertASTParam($1,$3);
-                                                    $$ = $1;
-                                                }
-|   stringExp                                   {$$ = $1;}
+ArgList :   ArgList ',' stringExp               {paramAST = insertASTParam(paramAST,$3);}
+|   stringExp                                   {paramAST = $1;}
 ;
 
 //-----------------------Type-----------------------------
@@ -506,7 +503,7 @@ stmt:	Inputstmt                           {$$ = $1;}
 |   _INITIALIZE    '(' ')'  ';'             {$$ = $1;}
 ;
 Inputstmt:  _READ '(' id ')' ';'            {
-                                                if($3->nodetype == FUNCTION)
+                                                if($3->nodetype == FUNCTION || $3->nodetype == FIELDFUNCTION)
                                                 {
                                                     printf("*line %d: function cannot be a parameter to read\n",line);
                                                     exit(0);
@@ -822,15 +819,14 @@ id: _ID                                                 {
                                                                 printf("line %d :\"%s\" not a function\n",line,$1->varname);
                                                                 exit(1);
                                                             }
-                                                            if(!checkASTParam(gst_node_temp->param,$3)){
+                                                            if(!checkASTParam(gst_node_temp->param,paramAST)){
                                                                 printf("line %d :Wrong arguments in \"%s\", does not match with declaration\n",line,$1->varname);
                                                                 exit(1);
                                                             }
                                                             $1->nodetype = FUNCTION;
                                                             $1->type = gst_node_temp->type;
-                                                            $1->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-                                                            $1->param = $3;
-                                                            $3 = NULL;
+                                                            $1->param = paramAST;
+                                                            paramAST = NULL;
                                                             $$ = $1;
                                                         }
 |   Field                                               {$$ = $1;}
@@ -920,7 +916,7 @@ FieldFunction   :   Field   '.' _ID '(' NewArgList ')'      {
                                                                     printf("*line %d : No method \"%s\" in \"%s\"\n",line,$3->varname,$1->varname);
                                                                     exit(0);
                                                                 }
-                                                                if(!checkASTParam(method_list_node_temp->param,$5))
+                                                                if(!checkASTParam(method_list_node_temp->param,paramAST))
                                                                 {
                                                                     printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,$1->varname);
                                                                     exit(0);
@@ -928,10 +924,9 @@ FieldFunction   :   Field   '.' _ID '(' NewArgList ')'      {
                                                                 $3->nodetype = FUNCTION;
                                                                 $3->type = method_list_node_temp->type;
                                                                 $3->class = NULL;
-                                                                $3->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-                                                                $3->param = $5;
+                                                                $3->param = paramAST;
                                                                 $$ = makeTreeNode(FIELDFUNCTION,$3->type,$3->class,$3->varname,-1,-1,$1,$3,NULL,"fieldfunction");
-                                                                $5 = NULL;
+                                                                paramAST = NULL;
                                                             }
 |   _ID '.' _ID '(' NewArgList ')'                          {
                                                                 gst_node_temp = GSTLookUp(gst,$1->varname);
@@ -951,9 +946,9 @@ FieldFunction   :   Field   '.' _ID '(' NewArgList ')'      {
                                                                     printf("*line %d : No method \"%s\" in class \"%s\"\n",line,$3->varname,$1->varname);
                                                                     exit(0);
                                                                 }
-                                                                if(!checkASTParam(method_list_node_temp->param,$5))
+                                                                if(!checkASTParam(method_list_node_temp->param,paramAST))
                                                                 {
-                                                                    printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,$1->varname);
+                                                                    printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,gst_node_temp->class->name);
                                                                     exit(0);
                                                                 }
                                                                 $1->nodetype = VARIABLE;
@@ -962,10 +957,9 @@ FieldFunction   :   Field   '.' _ID '(' NewArgList ')'      {
                                                                 $3->nodetype = FUNCTION;
                                                                 $3->type = method_list_node_temp->type;
                                                                 $3->class = NULL;
-                                                                $3->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-                                                                $3->param = $5;
+                                                                $3->param = paramAST;
                                                                 $$ = makeTreeNode(FIELDFUNCTION,$3->type,$3->class,$3->varname,-1,-1,$1,$3,NULL,"fieldfunction");
-                                                                $5 = NULL;
+                                                                paramAST = NULL;
                                                             }
 |   _SELF   '.' _ID '(' NewArgList ')'                      {
                                                                 if(!class_section)
@@ -979,7 +973,7 @@ FieldFunction   :   Field   '.' _ID '(' NewArgList ')'      {
                                                                     printf("*line %d: Class \"%s\" does not have method \"%s\"\n",line,C->tail->name,$3->varname);
                                                                     exit(0);
                                                                 }
-                                                                if(!checkASTParam(method_list_node_temp->param,$5))
+                                                                if(!checkASTParam(method_list_node_temp->param,paramAST))
                                                                 {
                                                                     printf("line %d :Arguments in \"%s\", does not match with declaration in class \"%s\"\n",line,$3->varname,$1->varname);
                                                                     exit(0);
@@ -990,10 +984,9 @@ FieldFunction   :   Field   '.' _ID '(' NewArgList ')'      {
                                                                 $3->nodetype = FUNCTION;
                                                                 $3->type = method_list_node_temp->type;
                                                                 $3->class = NULL;
-                                                                $3->param = (struct AST_Node *)malloc(sizeof(struct AST_Node));
-                                                                $3->param = $5;
+                                                                $3->param = paramAST;
                                                                 $$ = makeTreeNode(FIELDFUNCTION,$3->type,$3->class,$3->varname,-1,-1,$1,$3,NULL,"fieldfunction");
-                                                                $5 = NULL;
+                                                                paramAST = NULL;
                                                             }
 ;
 %%
@@ -1014,6 +1007,7 @@ int main(int argc,char *argv[]){
     C = initClassTable();
     curr_typetableentry = NULL;
     curr_classtableentry = NULL;
+    paramAST = NULL;
     ADDR = 4096;
     LABEL = 0;
     class_section = 0;

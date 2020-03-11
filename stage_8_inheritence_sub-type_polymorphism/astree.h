@@ -379,6 +379,7 @@ void return_code_generator(FILE *, struct AST_Node *, struct GSTable *, struct L
 void code_generator_util(FILE *, struct AST_Node *, int, int, struct GSTable *, struct LSTable *, struct ClassTableNode *);
 void code_generator(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *, struct ClassTableNode *);
 void generateExit(FILE *);
+void generateRuntimeVFT(FILE *);
 void generateHeader(FILE *);
 reg_idx getArrayNodeAddress(FILE *, struct AST_Node *, struct GSTable *, struct LSTable *, struct ClassTableNode *);
 reg_idx getAddress(FILE *, char *, struct GSTable *, struct LSTable *, struct ClassTableNode *);

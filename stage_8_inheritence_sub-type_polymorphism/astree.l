@@ -45,7 +45,7 @@ str         {yylval.node = makeTreeNode(STRING,NULL,NULL,NULL,-1,-1,NULL,NULL,NU
 break       {yylval.node = makeTreeNode(BREAK,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,yytext);return _BREAK;}
 continue    {yylval.node = makeTreeNode(CONTINUE,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,yytext);return _CONTINUE;}
 breakpoint  {yylval.node = makeTreeNode(BREAKPOINT,NULL,NULL,NULL,-1,-1,NULL,NULL,NULL,yytext);return _BREAKPOINT;}
-([\"](.)*[\"])  {yylval.node = makeTreeNode(CONSTANT,TypeTableLookUp(T,"str"),NULL,NULL,-1,-1,NULL,NULL,NULL,yytext);return _STRING;}
+(\"(?:[^"\\]|\\.)*\")  {printf("\n\n%s@@@@@\n\n",yytext);yylval.node = makeTreeNode(CONSTANT,TypeTableLookUp(T,"str"),NULL,NULL,-1,-1,NULL,NULL,NULL,yytext);return _STRING;}
 ({alpha}({alpha}|{digit})*) 	{yylval.node = makeTreeNode(VARIABLE,NULL,NULL,yytext,-1,-1,NULL,NULL,NULL,yytext);return _ID;}
 ({digit}) 	{
     number = atoi(yytext);
@@ -55,7 +55,7 @@ breakpoint  {yylval.node = makeTreeNode(BREAKPOINT,NULL,NULL,NULL,-1,-1,NULL,NUL
 "."         {return *yytext;}
 ";" 		{return *yytext;}
 "(" 		{return *yytext;}
-","         {return *yytext;}
+","         {printf("\n\nbhola\n\n");return *yytext;}
 ")" 		{return *yytext;}
 "{"         {return *yytext;}
 "}"         {return *yytext;}

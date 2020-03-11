@@ -680,6 +680,7 @@ struct ClassTable *installClassTableNode(struct ClassTable *C, struct TypeTable 
 		C->tail->next = newClassTableNode(name, C->entry, 0, 0, NULL, NULL, ClassTableLookUp(C, parent));
 		C->tail = C->tail->next;
 	}
+	allocate(8);
 	C->entry++;
 	return C;
 }
@@ -773,6 +774,8 @@ struct ClassTableNode *inheritMemberField(struct ClassTableNode *c)
 	}
 	struct ClassTableNode *par = c->parent;
 	if (par == NULL)
+		return c;
+	if (par->field == NULL)
 		return c;
 	struct FieldListNode *curr = par->field->head;
 	while (curr)
@@ -1003,6 +1006,7 @@ int checkASTParam(struct ParamList *param, struct AST_Node *a)
 {
 	struct ParamNode *curr1 = param->head;
 	struct AST_Node *curr2 = a;
+	ASTPrintParam(a);
 	while (curr1 && curr2)
 	{
 		if ((curr1->type != curr2->type) || curr2->class)
@@ -1011,7 +1015,10 @@ int checkASTParam(struct ParamList *param, struct AST_Node *a)
 		curr2 = curr2->next_param;
 	}
 	if (curr1 || curr2)
+	{
+		printf("Hello\n");
 		return 0;
+	}
 	else
 		return 1;
 }
@@ -1339,7 +1346,13 @@ int read_code_generator(FILE *ft, struct AST_Node *root, struct GSTable *g, stru
 	if (root && root->left)
 	{
 		reg_idx id = getReg();
-		if (root->left->nodetype == VARIABLE)
+		if (root->left->nodetype == FIELD)
+		{
+			reg_idx aRes = getAddressOfField(ft, root->left, g, l, class);
+			fprintf(ft, "MOV R%d, R%d\n", id, aRes);
+			aRes = freeReg();
+		}
+		else if (root->left->nodetype == VARIABLE)
 		{
 			reg_idx aRes = getAddress(ft, root->left->varname, g, l, class);
 			fprintf(ft, "MOV R%d, R%d\n", id, aRes);
@@ -1581,7 +1594,11 @@ reg_idx fieldFunctionCall_code_generator(FILE *ft, struct AST_Node *root, struct
 	fprintf(ft, "PUSH R%d\n", z);
 	z = freeReg();
 	struct MethodListNode *found = MethodLookUp(root->left->class, root->right->varname);
-	fprintf(ft, "CALL _F%d\n", found->Mlabel);
+	z = getVFTPointer(ft, root->left, g, l, class);
+	fprintf(ft, "ADD R%d, %d\n", z, found->methodIdx);
+	fprintf(ft, "MOV R%d, [R%d]\n", z, z);
+	fprintf(ft, "CALL R%d\n", z);
+	z = freeReg();
 	int temp = cnt;
 	while (temp--)
 		getReg();
@@ -1727,10 +1744,38 @@ void code_generator_util(FILE *ft, struct AST_Node *root, int blabel, int clabel
 	return;
 }
 
+void generateRuntimeVFT(FILE *ft)
+{
+	int num = C->entry;
+	struct ClassTableNode *curr = C->head;
+	reg_idx z = getReg();
+	fprintf(ft, "MOV R%d, 4096\n", z);
+	for (int i = 0; i < num; i++)
+	{
+		int cnt = curr->methodCount;
+		struct MethodListNode *ml = curr->method->head;
+		for (int j = 0; j < 8; j++)
+		{
+			if (j < cnt)
+			{
+				fprintf(ft, "MOV [R%d], _F%d\n", z, ml->Mlabel);
+				ml = ml->next;
+			}
+			else
+				fprintf(ft, "MOV [R%d], -1\n", z);
+			fprintf(ft, "ADD R%d, 1\n", z);
+		}
+		curr = curr->next;
+	}
+	fprintf(ft, "MOV BP, R%d\nMOV SP, %d\nPUSH R%d\n", z, ADDR - 1, z);
+	z = freeReg();
+	return;
+}
+
 void generateHeader(FILE *ft)
 {
 	fprintf(ft, "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", 0, 2056, 0, 0, 0, 0, 0, 0);
-	fprintf(ft, "MOV SP, %d\nMOV BP, 4096\nPUSH R0\n", ADDR - 1);
+	generateRuntimeVFT(ft);
 	return;
 }
 
